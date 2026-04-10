@@ -1,4 +1,4 @@
-import * as NodeStatic from "node-static";
+import * as NodeStatic from "http-server";
 import * as fs from "fs-extra";
 import puppeteer, { Browser, Page } from "puppeteer";
 import * as http from "http";
@@ -15,7 +15,8 @@ export async function setupServer(buildDir: string): Promise<http.Server | undef
   await fs.copy("./webpack/yasgui.png", `${dir}/yasgui.png`);
 
   if (TEST_ON_DEV_BUILD) return Promise.resolve(undefined);
-  let staticFileServer = new NodeStatic.Server(buildDir);
+  // @ts-ignore
+  let staticFileServer = new NodeStatic.createServer(buildDir);
   return new Promise<http.Server>((resolve, reject) => {
     var server = http
       .createServer(function (request, response) {
