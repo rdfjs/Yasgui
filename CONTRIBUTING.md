@@ -40,8 +40,9 @@ When your contribution is ready to be included in a release, please follow these
    A GitHub Actions bot will comment on the PR with the potential release impact.
    If you forgot to add a changeset, maintainers can add one via the GitHub UI.
 4. **Review and Merge**: After review, your PR will be merged into the default branch (`main`).
-   This triggers a [GitHub workflow](/.github/workflows/release.yaml) that creates a "Version Packages" PR.
-5. **Version Packages PR**: Maintainers review and approve the version bump PR.
+   This triggers a [GitHub workflow](/.github/workflows/release.yaml) that creates a `Merge to release` PR.
+   Merging the feature PR does not immediately trigger a release; the version bump and release process is handled separately to allow for batching multiple changes together if needed.
+5. **Version Packages PR**: Maintainers review and approve the version bump PR (`Merge to release` PR).
    Once merged, the workflow will:
    - Publish packages to NPM
    - Create Git tags
