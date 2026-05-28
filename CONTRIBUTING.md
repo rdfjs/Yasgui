@@ -62,3 +62,12 @@ Using Changesets allows for precise control over releases and supports versionin
 We are committed to fostering a welcoming and inclusive environment.
 Please be respectful and considerate in all interactions.
 If you experience or witness unacceptable behavior, please report it to the maintainers.
+
+## Maintainer Guidelines
+
+Since this is a collaborative project, we aim to have at least 2 to 3 active maintainers.
+
+When a PR is opened, it is automatically assigned to these active maintainers.
+Besides the CI passing, a PR requires the approval of at least 2 maintainers before it gets merged.
+If a PR receives only one approval, and the PR remains open for 4 weeks, then it can be merged as well. To not delay progress too much if other maintainers are unavailable. (unless one of the maintainers explicitly requests waiting for an additional review)
+If a maintainer makes a PR it only requires approval of 1 additional maintainer (since we already have the author approval).
