@@ -2,7 +2,6 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-
     <style>
       body {
         font-family: "Roboto", sans-serif;
@@ -23,39 +22,34 @@
       }
     </style>
     <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" />
-    <style></style>
+    <title></title>
   </head>
 
   <body>
     <div style="background:#eee">
       <nav style="display: flex">
-        <img src="webpack/yasgui.png" style="max-height:50px;padding:5px;margin-left: 10px" alt="Yasgui Logo" />
+        <img src="/yasgui.png" style="max-height:50px;padding:5px;margin-left: 10px" alt="Yasgui Logo" />
         <ul style="display: flex; list-style: none; align-self: center">
-          <% _.forEach(links, function(link) { %>
-          <li class="navItem <%- link.className %>">
-            <a class="nav-link" href="<%- link.href %>"><%- link.text %></a>
-          </li>
-          <% }); %>
+          <li class="navItem"><a class="nav-link" href="/">Yasgui</a></li>
+          <li class="navItem active"><a class="nav-link" href="yasqe">Yasqe</a></li>
+          <li class="navItem"><a class="nav-link" href="yasr">Yasr</a></li>
         </ul>
       </nav>
     </div>
-		<div style="display:none; background-color: grey; color:yellow" id="noExternalServicesWarning">
-			Running yasqe without references to external services such as LOV and prefix.cc
-			Mainly useful for test-suite purposes
-		</div>
-		<a id="noExternalServicesToggle" style="display:none;" href="/yasqe.html?noExternalServices=1">Run yasqe without references to external services</a>
+    <div style="display:none; background-color: grey; color:yellow" id="noExternalServicesWarning">
+      Running yasqe without references to external services such as LOV and prefix.cc Mainly useful for test-suite
+      purposes
+    </div>
+    <a id="noExternalServicesToggle" style="display:none;" href="/yasqe.html?noExternalServices=1"
+      >Run yasqe without references to external services</a
+    >
     <div id="yasqe"></div>
-    <script>
-      var isIE11 = !!window.MSInputMethodContext && !!document.documentMode;
-      if (isIE11) {
-        var polyfills = document.createElement("script");
-        polyfills.setAttribute("src", "//yasgui.triply.cc/yasgui.polyfill.min.js");
-        document.head.appendChild(polyfills);
-      }
-      window.onpageshow = function() {
-				const noExternalServices = document.location.search.indexOf("noExternalServices") >= 0;
+    <script type="module">
+      import Yasqe from "@zazuko/yasqe";
+      window.onpageshow = function () {
+        const noExternalServices = document.location.search.indexOf("noExternalServices") >= 0;
         if (noExternalServices) {
-					document.getElementById('noExternalServicesWarning').style.display = 'block'
+          document.getElementById("noExternalServicesWarning").style.display = "block";
           //avoid references to external services such as lov and prefix.cc
           //Useful for unit-testing purposes
           Yasqe.defaults.autocompleters.splice(Yasqe.defaults.autocompleters.indexOf("prefixes"), 1);
@@ -63,7 +57,7 @@
             name: "prefixes-local",
             persistenceId: null,
             get: () => {
-              return new Promise(resolve => {
+              return new Promise((resolve) => {
                 setTimeout(() => {
                   resolve(
                     [
@@ -78,19 +72,19 @@
                       "rdfs: <http://www.w3.org/2000/01/rdf-schema#>",
                       "testa: <https://test.a.com/>",
                       "testb: <https://test.b.com/>",
-                      "testc: <https://test.c.com/>"
+                      "testc: <https://test.c.com/>",
                     ],
                     20
                   );
                 });
               });
-            }
+            },
           });
           Yasqe.defaults.autocompleters.splice(Yasqe.defaults.autocompleters.indexOf("property"), 1);
           const propCompletions = [
             "http://www.opengis.net/ont/geosparql#defaultGeometry",
             "http://www.opengis.net/ont/geosparql#asWKT",
-            "http://www.opengis.net/ont/geosparql#asGML"
+            "http://www.opengis.net/ont/geosparql#asGML",
           ];
           for (let i = 0; i < 1000; i++) {
             propCompletions.push("https://test.a.com/" + i);
@@ -98,17 +92,17 @@
 
           Yasqe.forkAutocompleter("property", {
             name: "property-local",
-            get: function(yasqe, token) {
+            get: function (yasqe, token) {
               console.log(
                 propCompletions,
-                propCompletions.filter(iri => token.autocompletionString.indexOf(iri) === 0)
+                propCompletions.filter((iri) => token.autocompletionString.indexOf(iri) === 0)
               );
-              return new Promise(resolve => {
+              return new Promise((resolve) => {
                 setTimeout(() => {
-                  resolve(propCompletions.filter(iri => iri.indexOf(token.autocompletionString) === 0));
+                  resolve(propCompletions.filter((iri) => iri.indexOf(token.autocompletionString) === 0));
                 });
               });
-            }
+            },
           });
           const classCompletions = [];
           for (let i = 0; i < 1000; i++) {
@@ -118,23 +112,23 @@
           Yasqe.defaults.autocompleters.splice(Yasqe.defaults.autocompleters.indexOf("class"), 1);
           Yasqe.forkAutocompleter("class", {
             name: "class-local",
-            get: function(yasqe, token) {
-              return new Promise(resolve => {
+            get: function (yasqe, token) {
+              return new Promise((resolve) => {
                 setTimeout(() => {
-                  resolve(classCompletions.filter(iri => iri.indexOf(token.autocompletionString) === 0));
+                  resolve(classCompletions.filter((iri) => iri.indexOf(token.autocompletionString) === 0));
                 });
               });
-            }
+            },
           });
         } else {
-					document.getElementById('noExternalServicesToggle').style.display = 'block'
-				}
+          document.getElementById("noExternalServicesToggle").style.display = "block";
+        }
 
         window.yasqe = new Yasqe(document.getElementById("yasqe"));
-        window.yasqe.on("queryResponse", function() {
+        window.yasqe.on("queryResponse", function () {
           console.log("response event", arguments);
         });
-        window.yasqe.on("query", function() {
+        window.yasqe.on("query", function () {
           console.log("query event", arguments);
         });
       };

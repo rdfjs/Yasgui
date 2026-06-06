@@ -3,7 +3,16 @@
   "description": "Yet Another SPARQL Resultset GUI",
   "version": "4.6.1",
   "main": "build/yasr.min.js",
+  "module": "build/yasr.esm.js",
   "types": "build/ts/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/ts/src/index.d.ts",
+      "import": "./build/yasr.esm.js",
+      "require": "./build/yasr.min.js"
+    },
+    "./*": "./*"
+  },
   "license": "MIT",
   "author": "Triply <info@triply.cc>",
   "homepage": "https://github.com/zazuko/Yasgui",
@@ -47,7 +56,6 @@
     "@types/node": "^22.5.4",
     "@types/papaparse": "^5.3.2",
     "@types/sanitize-html": "^1.20.2",
-    "better-npm-run": "^0.1.1",
     "ts-essentials": "^7.0.1"
   },
   "publishConfig": {

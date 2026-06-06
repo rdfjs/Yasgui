@@ -1,20 +1,21 @@
 /**
  * Make sure not to include any deps from our main index file. That way, we can easily publish the publin as standalone build
  */
-import { Plugin } from "../";
+import type { Plugin } from "../";
 import Yasr from "../../";
-require("./index.scss");
-const CodeMirror = require("codemirror");
-require("codemirror/addon/fold/foldcode.js");
-require("codemirror/addon/fold/foldgutter.js");
-require("codemirror/addon/fold/xml-fold.js");
-require("codemirror/addon/fold/brace-fold.js");
+import "./index.scss";
+import _CodeMirrorModule from "codemirror";
+const CodeMirror: any = _CodeMirrorModule;
+import "codemirror/addon/fold/foldcode.js";
+import "codemirror/addon/fold/foldgutter.js";
+import "codemirror/addon/fold/xml-fold.js";
+import "codemirror/addon/fold/brace-fold.js";
 
-require("codemirror/addon/edit/matchbrackets.js");
-require("codemirror/mode/xml/xml.js");
+import "codemirror/addon/edit/matchbrackets.js";
+import "codemirror/mode/xml/xml.js";
 
-require("codemirror/mode/javascript/javascript.js");
-require("codemirror/lib/codemirror.css");
+import "codemirror/mode/javascript/javascript.js";
+import "codemirror/lib/codemirror.css";
 import { drawSvgStringAsElement, addClass, removeClass, drawFontAwesomeIconAsSvg } from "@zazuko/yasgui-utils";
 import * as faAlignIcon from "@fortawesome/free-solid-svg-icons/faAlignLeft";
 import { DeepReadonly } from "ts-essentials";

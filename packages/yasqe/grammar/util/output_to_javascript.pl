@@ -2,7 +2,7 @@
 */
 
 output_table_js:-
-	write('module.exports = {table:'),nl,
+	write('export default {table:'),nl,
 	setof(LHS, RHS^(LHS=>RHS), NTs),
 	form_table(NTs,'{'),
 	nl,write('},').

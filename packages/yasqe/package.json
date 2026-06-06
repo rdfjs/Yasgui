@@ -3,7 +3,16 @@
   "description": "Yet Another SPARQL Query Editor",
   "version": "4.6.1",
   "main": "build/yasqe.min.js",
+  "module": "build/yasqe.esm.js",
   "types": "build/ts/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/ts/src/index.d.ts",
+      "import": "./build/yasqe.esm.js",
+      "require": "./build/yasqe.min.js"
+    },
+    "./*": "./*"
+  },
   "license": "MIT",
   "author": "Triply <info@triply.cc>",
   "homepage": "https://github.com/zazuko/Yasgui",

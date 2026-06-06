@@ -1,8 +1,8 @@
 import Yasgui from "./";
 import TabContextMenu from "./TabContextMenu";
 import { hasClass, addClass, removeClass } from "@zazuko/yasgui-utils";
-const sortablejs = require("sortablejs");
-require("./TabElements.scss");
+import sortablejs from "sortablejs";
+import "./TabElements.scss";
 export interface TabList {}
 export class TabListEl {
   private tabList: TabList;
@@ -234,7 +234,7 @@ export class TabList {
     this._tabsListEl.setAttribute("role", "tablist");
     this._tabsListEl.addEventListener("keydown", this.handleKeydownArrowKeys);
 
-    sortablejs.default.create(this._tabsListEl, {
+    sortablejs.create(this._tabsListEl, {
       group: "tabList",
       animation: 100,
       onUpdate: (_ev: any) => {
@@ -270,7 +270,7 @@ export class TabList {
     this._tabsListEl.appendChild(this.addTabEl);
     this.tabContextMenu = TabContextMenu.get(
       this.yasgui,
-      this.yasgui.config.contextMenuContainer ? this.yasgui.config.contextMenuContainer : this._tabsListEl
+      this.yasgui.config.contextMenuContainer ? this.yasgui.config.contextMenuContainer : this._tabsListEl,
     );
     return this._tabsListEl;
   }
@@ -315,7 +315,7 @@ export class TabList {
     if (index !== undefined && index < this.yasgui.persistentConfig.getTabs().length - 1) {
       this._tabsListEl?.insertBefore(
         this._tabs[tabId].draw(tabConf.name),
-        this._tabs[this.yasgui.persistentConfig.getTabs()[index + 1]].tabEl || null
+        this._tabs[this.yasgui.persistentConfig.getTabs()[index + 1]].tabEl || null,
       );
     } else {
       this._tabsListEl?.insertBefore(this._tabs[tabId].draw(tabConf.name), this.addTabEl || null);

@@ -1,14 +1,14 @@
 /**
  * Make sure not to include any deps from our main index file. That way, we can easily publish the plugin as standalone build
  */
-require("./index.scss");
-require("datatables.net-dt/css/dataTables.dataTables.min.css");
-require("datatables.net");
+import "./index.scss";
+import "datatables.net-dt/css/dataTables.dataTables.min.css";
+import "datatables.net";
 //@ts-ignore (jquery _does_ expose a default. In es6, it's the one we should use)
 import $ from "jquery";
 import Parser from "../../parsers";
 import { escape } from "lodash-es";
-import { Plugin, DownloadInfo } from "../";
+import type { Plugin, DownloadInfo } from "../";
 import Yasr from "../../";
 import { drawSvgStringAsElement, drawFontAwesomeIconAsSvg, addClass, removeClass } from "@zazuko/yasgui-utils";
 import * as faTableIcon from "@fortawesome/free-solid-svg-icons/faTable";
@@ -17,7 +17,7 @@ import { cloneDeep } from "lodash-es";
 import sanitize from "../../helpers/sanitize";
 import type { Api, ConfigColumns, CellMetaSettings, Config } from "datatables.net";
 
-const ColumnResizer = require("column-resizer");
+import * as ColumnResizer from "column-resizer";
 const DEFAULT_PAGE_SIZE = 50;
 
 export interface PluginConfig {
@@ -127,7 +127,7 @@ export default class Table implements Plugin<PluginConfig> {
     const uri = `${hideBrackets ? "" : "&lt;"}<a class='iri' target='${
       this.config.openIriInNewWindow ? "_blank" : "_self"
     }'${this.config.openIriInNewWindow ? " ref='noopener noreferrer'" : ""} href='${href}'>${sanitize(
-      visibleString
+      visibleString,
     )}</a>${hideBrackets ? "" : "&gt;"}`;
     return sanitize(uri);
   }

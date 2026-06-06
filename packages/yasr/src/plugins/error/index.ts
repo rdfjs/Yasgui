@@ -1,10 +1,10 @@
 /**
  * Make sure not to include any deps from our main index file. That way, we can easily publish the publin as standalone build
  */
-import { Plugin } from "../";
+import type { Plugin } from "../";
 import Yasr from "../../";
 import { addClass } from "@zazuko/yasgui-utils";
-require("./index.scss");
+import "./index.scss";
 
 export default class Error implements Plugin<never> {
   private yasr: Yasr;

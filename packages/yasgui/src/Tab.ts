@@ -7,7 +7,7 @@ import { default as Yasr, Parser, Config as YasrConfig, PersistentConfig as Yasr
 import { mapValues, eq, mergeWith, words, deburr, invert } from "lodash-es";
 import * as shareLink from "./linkUtils";
 import EndpointSelect from "./endpointSelect";
-require("./tab.scss");
+import "./tab.scss";
 import { getRandomId, default as Yasgui, YasguiRequestConfig } from "./";
 export interface PersistedJsonYasr extends YasrPersistentConfig {
   responseSummary: Parser.ResponseSummary;
@@ -188,7 +188,7 @@ export class Tab extends EventEmitter {
       this.getEndpoint(),
       this.controlBarEl,
       this.yasgui.config.endpointCatalogueOptions,
-      this.yasgui.persistentConfig.getEndpointHistory()
+      this.yasgui.persistentConfig.getEndpointHistory(),
     );
     this.endpointSelect.on("select", (endpoint, endpointHistory) => {
       this.setEndpoint(endpoint, endpointHistory);
@@ -323,7 +323,7 @@ export class Tab extends EventEmitter {
               if (Array.isArray(objValue) || Array.isArray(srcValue)) {
                 return [...(objValue || []), ...(srcValue || [])];
               }
-            }
+            },
           ),
           //Passing this manually. Dont want to use our own persistentJson, as that's flattened exclude functions
           //The adjustQueryBeforeRequest is meant to be a function though, so let's copy that as is
@@ -414,7 +414,7 @@ export class Tab extends EventEmitter {
     if (!this.yasr.results) return;
     if (!this.yasr.results.hasError()) {
       this.persistentJson.yasr.response = this.yasr.results.getAsStoreObject(
-        this.yasgui.config.yasr.maxPersistentResponseSize
+        this.yasgui.config.yasr.maxPersistentResponseSize,
       );
     } else {
       // Don't persist if there is an error and remove the previous result
@@ -444,7 +444,7 @@ export class Tab extends EventEmitter {
         if (this.yasqe) {
           return shareLink.appendArgsToUrl(
             this.getEndpoint(),
-            Yasqe.Sparql.getUrlArguments(this.yasqe, this.persistentJson.requestConfig as RequestConfig<any>)
+            Yasqe.Sparql.getUrlArguments(this.yasqe, this.persistentJson.requestConfig as RequestConfig<any>),
           );
         }
       },
@@ -521,16 +521,16 @@ function getCorsErrorRenderer(tab: Tab) {
         const errorEl = document.createElement("div");
         const errorSpan = document.createElement("p");
         errorSpan.innerHTML = `You are trying to query an HTTP endpoint (<a href="${safeEndpoint(
-          tab.getEndpoint()
+          tab.getEndpoint(),
         )}" target="_blank" rel="noopener noreferrer">${safeEndpoint(
-          tab.getEndpoint()
+          tab.getEndpoint(),
         )}</a>) from an HTTP<strong>S</strong> website (<a href="${safeEndpoint(window.location.href)}">${safeEndpoint(
-          window.location.href
+          window.location.href,
         )}</a>).<br>This is not allowed in modern browsers, see <a target="_blank" rel="noopener noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy">https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy</a>.`;
         if (tab.yasgui.config.nonSslDomain) {
           const errorLink = document.createElement("p");
           errorLink.innerHTML = `As a workaround, you can use the HTTP version of Yasgui instead: <a href="${tab.getShareableLink(
-            tab.yasgui.config.nonSslDomain
+            tab.yasgui.config.nonSslDomain,
           )}" target="_blank">${tab.yasgui.config.nonSslDomain}</a>`;
           errorSpan.appendChild(errorLink);
         }
