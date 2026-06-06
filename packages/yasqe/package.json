@@ -5,6 +5,7 @@
   "main": "build/yasqe.min.js",
   "module": "build/yasqe.esm.js",
   "types": "build/ts/src/index.d.ts",
+  "files": ["build"],
   "exports": {
     ".": {
       "types": "./build/ts/src/index.d.ts",

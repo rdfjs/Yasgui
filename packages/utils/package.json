@@ -5,6 +5,7 @@
   "main": "build/utils.min.js",
   "module": "build/utils.esm.js",
   "types": "build/ts/src/index.d.ts",
+  "files": ["build"],
   "exports": {
     ".": {
       "types": "./build/ts/src/index.d.ts",
