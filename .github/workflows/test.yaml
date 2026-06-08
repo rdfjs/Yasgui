@@ -20,9 +20,7 @@ jobs:
         run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
 
       - name: Install dependencies
-        run: |
-          rm -rf ~/.cache/puppeteer
-          npm ci
+        run: npm ci
 
       - name: Build
         run: npm run build
