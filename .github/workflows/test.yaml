@@ -5,6 +5,9 @@ on: push
 jobs:
   tests:
     runs-on: ubuntu-latest
+    env:
+      # Pin one cache dir so npm ci, the install step, and the test all use the same Chrome path
+      PUPPETEER_CACHE_DIR: ${{ github.workspace }}/.cache/puppeteer
 
     steps:
       - name: Checkout
@@ -24,7 +27,7 @@ jobs:
 
       - name: Install Chrome for Puppeteer
         run: |
-          rm -rf ~/.cache/puppeteer
+          rm -rf "$PUPPETEER_CACHE_DIR"
           npx puppeteer browsers install chrome
 
       - name: Build
