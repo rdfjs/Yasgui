@@ -97,7 +97,9 @@ export const sparqlThemeLight = {
   type: "light",
   colors: {
     "editor.foreground": "#586e75",
-    "editor.background": "#ffffff",
+    "editor.background": "#f7f7f7", // off-white with better contrast than white
+    // "editor.background": "#ffffff", // white
+    // "editor.background": "#fdf6e3", // solarized light background
     "editor.selectionBackground": "#eee8d5",
     "editor.lineHighlightBackground": "#fdf6e3",
     "editorCursor.foreground": "#002b36",

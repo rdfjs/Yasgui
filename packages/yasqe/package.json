@@ -35,12 +35,12 @@
   },
   "dependencies": {
     "@zazuko/yasgui-utils": "^4.6.1",
-    "@codingame/monaco-vscode-textmate-service-override": "^25.0.0",
+    "@codingame/monaco-vscode-textmate-service-override": "^25.1.2",
     "lodash-es": "^4.18.1",
-    "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@^25.0.0",
-    "monaco-languageclient": "~10.6.0",
+    "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@^25.1.2",
+    "monaco-languageclient": "~10.7.0",
     "query-string": "^6.10.1",
-    "vscode": "npm:@codingame/monaco-vscode-extension-api@^25.0.0"
+    "vscode": "npm:@codingame/monaco-vscode-extension-api@^25.1.2"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.3",

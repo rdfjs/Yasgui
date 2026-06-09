@@ -74,7 +74,6 @@ export default class Response implements Plugin<PluginConfig> {
     };
     // When the original response is empty, use an empty string
     let value = this.yasr.results?.getOriginalResponseAsString() || "";
-    console.log("Original response:", value);
     const lines = value.split("\n");
     if (lines.length > config.maxLines) {
       value = lines.slice(0, config.maxLines).join("\n");

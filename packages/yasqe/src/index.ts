@@ -11,6 +11,8 @@ import * as imgs from "./imgs";
 
 import getDefaults from "./defaults";
 import { YasqeAjaxConfig } from "./sparql";
+export { sparqlThemeDark, sparqlThemeLight } from "./editor/sparqlTheme";
+export type { SparqlThemeOverrides } from "./editor/editorConfig";
 import "./style/yasqe.css";
 import "./style/buttons.css";
 
@@ -78,6 +80,7 @@ export class Yasqe extends EventEmitter {
         this.config.theme,
         lsWorker,
         this.config.editorOptions,
+        this.config.themes,
       );
       this.editor = result.editorApp.getEditor();
       this.languageClientWrapper = result.languageClient;
@@ -893,6 +896,12 @@ export interface Config {
    * fontSize: 16, minimap: { enabled: true } }`.
    */
   editorOptions: Record<string, any>;
+  /**
+   * Custom SPARQL theme overrides, deep-merged over the built-in light/dark themes. Use this to
+   * tweak editor colors, e.g. `{ dark: { colors: { "editor.background": "#000" } },
+   * light: { semanticTokenColors: { keyword: "#005" } } }`.
+   */
+  themes: { light?: Record<string, any>; dark?: Record<string, any> };
   /**
    * The language server to connect, provided by the consumer (yasqe is language-server agnostic).
    * Either a ready `Worker`, or a factory returning one (optionally async, e.g. after WASM init).

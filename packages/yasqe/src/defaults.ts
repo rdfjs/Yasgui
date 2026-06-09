@@ -20,6 +20,8 @@ SELECT * WHERE {
       typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light",
     // Custom Monaco editor options, deep-merged over the built-in defaults
     editorOptions: {},
+    // Custom SPARQL theme overrides, deep-merged over the built-in light/dark themes
+    themes: {},
     createShareableLink: function (yasqe: Yasqe) {
       return (
         document.location.protocol +

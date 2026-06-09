@@ -30,10 +30,17 @@ export interface MonacoEditorResult {
   getDocumentUri(): string;
 }
 
+/** Consumer overrides for the SPARQL editor themes, deep-merged OVER the built-in light/dark themes. */
+export interface SparqlThemeOverrides {
+  light?: Record<string, any>;
+  dark?: Record<string, any>;
+}
+
 /**
  * Creates a Monaco editor with SPARQL syntax highlighting.
  * @param lsWorker Optional, ready language-server Worker. When given, an LSP client is connected to it.
  * @param editorOptions Optional Monaco editor options, deep-merged OVER the built-in defaults.
+ * @param themeOverrides Optional partial light/dark theme objects, deep-merged OVER the built-in themes.
  */
 export async function startMonacoEditor(
   container: HTMLElement,
@@ -41,13 +48,18 @@ export async function startMonacoEditor(
   theme: "light" | "dark" = "dark",
   lsWorker?: Worker,
   editorOptions?: Record<string, any>,
+  themeOverrides?: SparqlThemeOverrides,
 ): Promise<MonacoEditorResult> {
+  // Built-in themes with any consumer overrides deep-merged on top
+  const lightTheme = merge({}, sparqlThemeLight, themeOverrides?.light ?? {});
+  const darkTheme = merge({}, sparqlThemeDark, themeOverrides?.dark ?? {});
+
   // Extension files for SPARQL language support
   const extensionFilesOrContents = new Map<string, string | URL>();
   extensionFilesOrContents.set("/sparql-configuration.json", JSON.stringify(sparqlLanguageConfig));
   extensionFilesOrContents.set("/sparql-grammar.json", JSON.stringify(sparqlTextmateGrammar));
-  extensionFilesOrContents.set("/sparql-theme-light.json", JSON.stringify(sparqlThemeLight));
-  extensionFilesOrContents.set("/sparql-theme-dark.json", JSON.stringify(sparqlThemeDark));
+  extensionFilesOrContents.set("/sparql-theme-light.json", JSON.stringify(lightTheme));
+  extensionFilesOrContents.set("/sparql-theme-dark.json", JSON.stringify(darkTheme));
 
   // MonacoVscodeApiConfig
   const vscodeApiConfig: MonacoVscodeApiConfig = {
@@ -138,6 +150,23 @@ export async function startMonacoEditor(
           onChange: true,
           onSave: false,
         },
+        // The language server returns completion labels as { label, detail } where `detail` is the
+        // human-readable text. Monaco glues `detail` directly onto the label with no separator,
+        // so we prefix it with a space here.
+        middleware: {
+          provideCompletionItem: async (document, position, context, token, next) => {
+            const result = await next(document, position, context, token);
+            if (!result) return result;
+            const items = Array.isArray(result) ? result : result.items;
+            for (const item of items) {
+              const label: any = item.label;
+              if (label && typeof label === "object" && label.detail && !label.detail.startsWith(" ")) {
+                label.detail = " " + label.detail;
+              }
+            }
+            return result;
+          },
+        },
       },
       connection: {
         options: {
@@ -156,7 +185,7 @@ export async function startMonacoEditor(
   }
 
   // Built-in default Monaco editor options. Consumers can override/extend any of these via the
-  // `editorOptions` argument (deep-merged on top), e.g. to toggle the minimap or line numbers.
+  // `editorOptions` argument (deep-merged on top)
   const defaultEditorOptions = {
     tabCompletion: "on",
     suggestOnTriggerCharacters: true,
