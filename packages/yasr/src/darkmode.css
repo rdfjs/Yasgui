@@ -63,6 +63,44 @@ html[data-theme="dark"] {
       background: var(--yr-d-raised);
     }
 
+    /* Raw response view ships only a light theme: a glaring white
+       panel in dark mode. Give it a grey surface, light-grey text and JSON token
+       colors that stay legible on the dark background. */
+    .yasr_results .CodeMirror {
+      color: var(--yr-d-text);
+      background: var(--yr-d-surface);
+      border-color: var(--yr-d-border);
+    }
+    .yasr_results .CodeMirror-gutters {
+      background: var(--yr-d-surface);
+      border-right-color: var(--yr-d-border);
+    }
+    .yasr_results .CodeMirror-linenumber {
+      color: var(--yr-d-muted);
+    }
+    .yasr_results .CodeMirror-cursor {
+      border-left-color: var(--yr-d-text);
+    }
+    .yasr_results .CodeMirror .cm-string {
+      color: #ce9178;
+    }
+    .yasr_results .CodeMirror .cm-string.cm-property {
+      color: #9cdcfe;
+    }
+    .yasr_results .CodeMirror .cm-number {
+      color: #b5cea8;
+    }
+    .yasr_results .CodeMirror .cm-atom {
+      color: #569cd6;
+    }
+    /* The overflow fade and "show more" overlay are hardcoded white in the source. */
+    .yasr_results .CodeMirror.overflow::before {
+      background: linear-gradient(transparent 0%, rgba(37, 37, 38, 0.67) 75%, var(--yr-d-surface) 100%);
+    }
+    .yasr_results .overlay_content {
+      background: linear-gradient(to right, transparent, var(--yr-d-surface) 5%, var(--yr-d-surface) 95%, transparent 100%);
+    }
+
     .dataTables_wrapper {
       color: var(--yr-d-text);
     }
@@ -144,6 +182,44 @@ html[data-theme="dark"] {
       .yasr_response_chip {
         color: var(--yr-d-text);
         background: var(--yr-d-raised);
+      }
+
+      /* Raw response view (CodeMirror) ships only a light theme: a glaring white
+         panel in dark mode. Give it a grey surface, light-grey text and JSON token
+         colors that stay legible on the dark background. */
+      .yasr_results .CodeMirror {
+        color: var(--yr-d-text);
+        background: var(--yr-d-surface);
+        border-color: var(--yr-d-border);
+      }
+      .yasr_results .CodeMirror-gutters {
+        background: var(--yr-d-surface);
+        border-right-color: var(--yr-d-border);
+      }
+      .yasr_results .CodeMirror-linenumber {
+        color: var(--yr-d-muted);
+      }
+      .yasr_results .CodeMirror-cursor {
+        border-left-color: var(--yr-d-text);
+      }
+      .yasr_results .CodeMirror .cm-property {
+        color: #9cdcfe;
+      }
+      .yasr_results .CodeMirror .cm-string {
+        color: #ce9178;
+      }
+      .yasr_results .CodeMirror .cm-number {
+        color: #b5cea8;
+      }
+      .yasr_results .CodeMirror .cm-atom {
+        color: #569cd6;
+      }
+      /* The overflow fade and "show more" overlay are hardcoded white in the source. */
+      .yasr_results .CodeMirror.overflow::before {
+        background: linear-gradient(transparent 0%, rgba(37, 37, 38, 0.67) 75%, var(--yr-d-surface) 100%);
+      }
+      .yasr_results .overlay_content {
+        background: linear-gradient(to right, transparent, var(--yr-d-surface) 5%, var(--yr-d-surface) 95%, transparent 100%);
       }
 
       .dataTables_wrapper {

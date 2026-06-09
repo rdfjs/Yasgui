@@ -4,8 +4,6 @@ import * as queryString from "query-string";
 import { drawSvgStringAsElement, addClass, removeClass } from "@zazuko/yasgui-utils";
 import { merge } from "lodash-es";
 
-// import { startMonacoEditor } from "./editor/editorConfig";
-
 import * as Sparql from "./sparql";
 import * as imgs from "./imgs";
 

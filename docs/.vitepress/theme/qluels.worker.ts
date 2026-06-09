@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * qlue-ls SPARQL language server running as a Web Worker (WASM).
  *
@@ -5,6 +6,17 @@
  */
 // @ts-ignore qlue-ls is loaded as a wasm module via vite-plugin-wasm
 import init, { init_language_server, listen } from "qlue-ls?init";
+
+// qlue-ls (Rust tracing-wasm) has no log-level API: it routes every level through the
+// console. Keep DEBUG/TRACE in dev, but only surface INFO and above in prod
+if (import.meta.env.PROD) {
+  console.debug = () => {};
+  const nativeLog = console.log.bind(console);
+  console.log = (...args: unknown[]) => {
+    if (typeof args[0] === "string" && /^%c\s*(DEBUG|TRACE)\b/.test(args[0])) return;
+    nativeLog(...args);
+  };
+}
 
 init().then(() => {
   // Connection Worker <-> Language Server (WASM)

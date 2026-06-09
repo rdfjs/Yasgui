@@ -1,20 +1,15 @@
-/* Full-bleed live demo on the home page (rendered with `layout: page`). */
 .yasgui-home .VPPage {
   padding: 0;
 }
 
-/* VitePress global CSS resets can inflate the endpoint input (larger font-size /
-   line-height than Yasgui expects). Pin it back to match the 35px control bar. */
+/* VitePress global CSS resets can inflate the endpoint input */
 .yasgui .autocomplete {
   font-size: 13px;
   line-height: normal;
   height: auto;
 }
 
-/* Make the demo a fixed-height viewport so the result area can flex. The flex
-   column runs from .yasgui down to .yasr_results: the editor keeps its natural
-   height and the graph plugin grows to fill whatever space is left under it.
-   (tabPanelsEl and yasrWrapperEl have no class, so we target them as last-child.) */
+/* Make the demo a fixed-height viewport so the result area can flex. */
 .yasgui-demo,
 .yasgui-demo__root {
   height: calc(100vh - var(--vp-nav-height, 64px));
@@ -44,70 +39,18 @@
   min-height: 30vh;
 }
 
-/* VitePress dark mode uses class="dark" on <html>. Override the clear-endpoint
-   button which has hardcoded light colors in the Yasgui source. */
+/* Fix Geo plugin that was hidding footer  */
+.yasgui-demo .yasr_results .leaflet-container {
+  min-height: 0;
+}
+
+/* VitePress dark mode uses class="dark" on <html>, while Yasgui's own dark theme keys off [data-theme="dark"]*/
 .dark .yasgui .clearEndpointBtn {
-  background-color: #2d2d30 !important;
-  border-color: #555555 !important;
-  color: #d4d4d4 !important;
+  background-color: var(--yg-d-border);
+  border-color: var(--yg-d-border);
+  color: var(--yg-d-text);
 }
-
-/* .yasgui-home-hero {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 32px 24px 8px;
-  text-align: center;
-}
-.yasgui-home-hero h1 {
-  font-size: 2.1rem;
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0 0 8px;
-  background: linear-gradient(120deg, var(--vp-c-brand-1), var(--vp-c-brand-3));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.yasgui-home-hero p {
-  color: var(--vp-c-text-2);
-  font-size: 1.05rem;
-  margin: 0 auto;
-  max-width: 640px;
-}
-.yasgui-home-hero .yasgui-home-links {
-  margin-top: 16px;
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-.yasgui-home-links a {
-  display: inline-block;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-decoration: none;
-  border: 1px solid var(--vp-c-divider);
-  color: var(--vp-c-text-1);
-  transition: border-color 0.2s, color 0.2s;
-}
-.yasgui-home-links a.primary {
-  background: var(--vp-c-brand-3);
-  border-color: var(--vp-c-brand-3);
+.dark .yasgui .clearEndpointBtn:hover {
+  background-color: var(--yg-d-hover);
   color: #fff;
 }
-.yasgui-home-links a:hover {
-  border-color: var(--vp-c-brand-1);
-  color: var(--vp-c-brand-1);
-}
-.yasgui-home-links a.primary:hover {
-  color: #fff;
-  opacity: 0.9;
-}
-
-.yasgui-home-demo {
-  padding: 16px 16px 32px;
-  max-width: 1400px;
-  margin: 0 auto;
-} */

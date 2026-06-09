@@ -2,7 +2,6 @@
 import type { Theme } from "vitepress";
 import DefaultTheme from "vitepress/theme";
 import YasguiDemo from "./components/YasguiDemo.vue";
-import "./style.css";
 import "./demo.css";
 
 export default {
