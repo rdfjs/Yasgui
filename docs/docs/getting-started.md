@@ -18,17 +18,16 @@ npm install -D vite-plugin-wasm
 ```
 
 The `@zazuko/*` packages are **self-contained ESM bundles** (Monaco and the language client are
-bundled in), you do **not** need to install `monaco-editor`. They also ship a UMD build, but the
-**ESM build is the one that works** (Monaco loads its workers via `import.meta.url`, which UMD
-can't do). Use a modern bundler (Vite recommended).
+bundled in), you do **not** need to install `monaco-editor`. They are **ESM only** (Monaco loads
+its workers via `import.meta.url`, which UMD can't do), so use a modern bundler (Vite recommended).
 
 Each package ships its own CSS that you must import once:
 
 ```js
-import "@zazuko/yasgui/build/yasgui.min.css";
+import "@zazuko/yasgui/build/yasgui.css";
 // or for standalone use:
-// import "@zazuko/yasqe/build/yasqe.min.css";
-// import "@zazuko/yasr/build/yasr.min.css";
+// import "@zazuko/yasqe/build/yasqe.css";
+// import "@zazuko/yasr/build/yasr.css";
 ```
 
 ## 2. Bundler setup (Vite)
@@ -131,7 +130,7 @@ export {};
 
 ```ts
 import Yasgui from "@zazuko/yasgui";
-import "@zazuko/yasgui/build/yasgui.min.css";
+import "@zazuko/yasgui/build/yasgui.css";
 import { createQlueLsWorker, configureQlueLsBackend } from "./qlue-ls";
 
 const yasgui = new Yasgui(document.getElementById("yasgui")!, {

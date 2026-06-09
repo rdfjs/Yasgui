@@ -9,11 +9,6 @@ const isProd = process.env.NODE_ENV === "production";
 // When BUILD_PACKAGE is set we build a single package otherwise vite serves the demo pages
 const libPackage = process.env.BUILD_PACKAGE as "yasgui" | "yasqe" | "yasr" | "utils" | undefined;
 
-const globalName = (p: string) => (p === "utils" ? "Utils" : p.charAt(0).toUpperCase() + p.slice(1));
-
-// UMD <script> global is the default export (e.g. `window.Yasgui === Yasgui`), matching webpack `libraryExport: "default"`.
-const umdDefaultGlobal = (g: string) => `if(typeof ${g}!=="undefined"&&${g}&&${g}.default){${g}=${g}.default;}`;
-
 const alias = [
   { find: /^@zazuko\/yasgui$/, replacement: resolve(__dirname, "packages/yasgui/src/index.ts") },
   { find: /^@zazuko\/yasqe$/, replacement: resolve(__dirname, "packages/yasqe/src/index.ts") },
@@ -73,10 +68,9 @@ export default defineConfig({
         assetsInlineLimit: usesMonaco ? 0 : 4096,
         lib: {
           entry: resolve(__dirname, `packages/${libPackage}/src/index.ts`),
-          name: globalName(libPackage),
-          // UMD for <script> users (<pkg>.min.js), ES for modern bundlers (<pkg>.esm.js)
-          formats: ["umd", "es"],
-          fileName: (format) => (format === "es" ? `${libPackage}.esm.js` : `${libPackage}.min.js`),
+          // ESM only: Monaco loads its workers/wasm via `import.meta.url`, which UMD cannot express
+          formats: ["es"],
+          fileName: () => `${libPackage}.js`,
         },
         rollupOptions: {
           // NOTE: Bundle everything (monaco-editor, vscode, monaco-languageclient, qlue-ls) into the lib
@@ -85,9 +79,7 @@ export default defineConfig({
           external: [],
           output: {
             assetFileNames: (info) =>
-              info.names?.some((n) => n.endsWith(".css")) ? `${libPackage}.min.css` : "[name][extname]",
-            // ESM consumers use a normal default import, so this only applies to the UMD bundle.
-            footer: (chunk) => (chunk.fileName.endsWith(".esm.js") ? "" : umdDefaultGlobal(globalName(libPackage))),
+              info.names?.some((n) => n.endsWith(".css")) ? `${libPackage}.css` : "[name][extname]",
           },
         },
       }

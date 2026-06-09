@@ -69,7 +69,7 @@ export default defineConfig({
   },
   vite: {
     // The demo imports the @zazuko/* packages' pre-built, self-contained ESM bundles
-    // (build/yasgui.esm.js, Monaco bundled in), exactly as a real consumer does. Run
+    // (build/yasgui.js, Monaco bundled in), exactly as a real consumer does. Run
     // `npm run build:lib` before building/serving the docs so those bundles exist.
     // We deliberately do NOT alias to TypeScript source: that pulls Monaco's deep
     // @codingame/monaco-vscode-api/vscode/* imports into the build, which the older Vite

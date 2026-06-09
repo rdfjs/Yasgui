@@ -16,77 +16,77 @@ export const sparqlThemeDark = {
   // colors mirror the TextMate scopes below so highlighting stays consistent
   semanticHighlighting: true,
   semanticTokenColors: {
-    keyword: "#6c71c4", // purple - matches keyword.control.sparql
-    function: "#2aa198", // cyan - matches keyword.operator.function.sparql (STRDT, CONCAT, ...)
-    variable: "#93a1a1", // base1 grey - matches variable.other.sparql
-    string: "#859900", // green - matches string
-    number: "#cb4b16", // orange - matches constant.numeric, alt: #FF5600
-    comment: "#586e75", // base01 - solarized
-    operator: "#2aa198", // cyan - matches keyword.symbol (*, ...)
-    namespace: "#b58900", // gold - matches variable.prefix.sparql
-    // namespace: { foreground: "#b58900", fontStyle: "italic bold" },
+    keyword: "#7f85e7", // purple - matches keyword.control.sparql
+    function: "#32beb3", // cyan - matches keyword.operator.function.sparql (STRDT, CONCAT, ...)
+    variable: "#adbebe", // base1 grey - matches variable.other.sparql
+    string: "#9db500", // green - matches string
+    number: "#f0591a", // orange - matches constant.numeric, alt: #FF5600
+    comment: "#68828a", // base01 - solarized
+    operator: "#32beb3", // cyan - matches keyword.symbol (*, ...)
+    namespace: "#d6a200", // gold - matches variable.prefix.sparql
+    // namespace: { foreground: "#d6a200", fontStyle: "italic bold" },
   },
   // Used by TextMate grammars (fallback if no semantic colors provided by language server)
   tokenColors: [
     {
       scope: "keyword.control.sparql",
       settings: {
-        foreground: "#6c71c4", // purple
+        foreground: "#7f85e7", // purple
         // fontStyle: "bold italic",
       },
     },
     {
       scope: "keyword.operator.function.sparql",
       settings: {
-        foreground: "#2aa198", // cyan
+        foreground: "#32beb3", // cyan
       },
     },
     {
       scope: "keyword.operator.prefixdecl.sparql",
       settings: {
-        foreground: "#6c71c4", // purple
+        foreground: "#7f85e7", // purple
       },
     },
     {
       scope: "variable.prefix.sparql",
       settings: {
-        foreground: "#b58900", // gold
+        foreground: "#d6a200", // gold
       },
     },
     {
       scope: "variable.reference.sparql",
       settings: {
-        foreground: "#b58900", // gold
+        foreground: "#d6a200", // gold
       },
     },
     {
       scope: "variable.other.sparql",
       settings: {
-        foreground: "#93a1a1", // base1 grey
+        foreground: "#adbebe", // base1 grey
       },
     },
     {
       scope: "constant.other.iri.sparql",
       settings: {
-        foreground: "#2aa198", // cyan
+        foreground: "#32beb3", // cyan
       },
     },
     {
       scope: "constant.numeric",
       settings: {
-        foreground: "#cb4b16", // orange
+        foreground: "#f0591a", // orange
       },
     },
     {
       scope: "string",
       settings: {
-        foreground: "#859900", // green
+        foreground: "#9db500", // green
       },
     },
     {
       scope: "keyword.symbol",
       settings: {
-        foreground: "#2aa198", // cyan
+        foreground: "#32beb3", // cyan
       },
     },
   ],

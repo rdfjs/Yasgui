@@ -14,8 +14,8 @@ npm run build:lib    # only the libraries (packages/*/build)
 
 For each package, `build:lib` emits into `packages/<pkg>/build`:
 
-- ESM (`*.esm.js`), the recommended entry point.
-- CSS (`*.min.css`).
+- ESM (`*.js`), the recommended entry point.
+- CSS (`*.css`).
 - TypeScript declarations.
 - The editor / language-server worker assets.
 

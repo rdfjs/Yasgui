@@ -29,7 +29,7 @@ function toggleTheme() {
 
 onMounted(async () => {
   const { default: Yasgui } = await import("@zazuko/yasgui");
-  await import("@zazuko/yasgui/build/yasgui.min.css");
+  await import("@zazuko/yasgui/build/yasgui.css");
   const { createQlueLsWorker, configureQlueLsBackend, DEMO_ENDPOINT } = await import("../qluels");
 
   syncTheme(isDark.value);

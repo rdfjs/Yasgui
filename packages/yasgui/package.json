@@ -2,15 +2,15 @@
   "name": "@zazuko/yasgui",
   "description": "Yet Another SPARQL GUI",
   "version": "4.6.1",
-  "main": "build/yasgui.min.js",
-  "module": "build/yasgui.esm.js",
+  "type": "module",
+  "main": "build/yasgui.js",
+  "module": "build/yasgui.js",
   "types": "build/ts/src/index.d.ts",
   "files": ["build"],
   "exports": {
     ".": {
       "types": "./build/ts/src/index.d.ts",
-      "import": "./build/yasgui.esm.js",
-      "require": "./build/yasgui.min.js"
+      "import": "./build/yasgui.js"
     },
     "./*": "./*"
   },

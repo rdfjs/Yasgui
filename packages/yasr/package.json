@@ -2,15 +2,15 @@
   "name": "@zazuko/yasr",
   "description": "Yet Another SPARQL Resultset GUI",
   "version": "4.6.1",
-  "main": "build/yasr.min.js",
-  "module": "build/yasr.esm.js",
+  "type": "module",
+  "main": "build/yasr.js",
+  "module": "build/yasr.js",
   "types": "build/ts/src/index.d.ts",
   "files": ["build"],
   "exports": {
     ".": {
       "types": "./build/ts/src/index.d.ts",
-      "import": "./build/yasr.esm.js",
-      "require": "./build/yasr.min.js"
+      "import": "./build/yasr.js"
     },
     "./*": "./*"
   },
