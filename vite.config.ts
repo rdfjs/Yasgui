@@ -31,7 +31,7 @@ export default defineConfig({
   server: { port: 4000, host: "0.0.0.0" },
   optimizeDeps: {
     // Rewrites `import.meta.url` asset references in pre-bundled monaco-vscode deps (dev only)
-    esbuildOptions: usesMonaco ? { plugins: [importMetaUrlPlugin] } : undefined,
+    rolldownOptions: usesMonaco ? { plugins: [importMetaUrlPlugin] } : undefined,
   },
   worker: {
     // Monaco + qlue-ls language-server workers are ES modules and load wasm
@@ -39,7 +39,7 @@ export default defineConfig({
     plugins: () => [wasm()],
     // Emit each worker as 1 self-contained file.
     // Inlining keeps every worker dependency-free and copyable as a single asset.
-    rollupOptions: { output: { inlineDynamicImports: true } },
+    rolldownOptions: { output: { codeSplitting: false } },
   },
   plugins: [
     ...(usesMonaco ? [wasm()] : []),
@@ -75,14 +75,14 @@ export default defineConfig({
           formats: ["es"],
           fileName: () => `${libPackage}.js`,
         },
-        rollupOptions: {
+        rolldownOptions: {
           // NOTE: Bundle everything (monaco-editor, vscode, monaco-languageclient, qlue-ls) into the lib
           // so a single monaco-vscode instance lives inside yasqe. Externalizing any of these makes the consumer
           // load a second instance, which breaks the vscode service registry and the editor silently fails to mount
           external: [],
           output: {
             // Emit 1 self-contained JS file (no code-split sibling chunks)
-            inlineDynamicImports: true,
+            codeSplitting: false,
             assetFileNames: (info) =>
               info.names?.some((n) => n.endsWith(".css")) ? `${libPackage}.css` : "[name][extname]",
           },
@@ -94,7 +94,7 @@ export default defineConfig({
         emptyOutDir: false,
         target: "esnext",
         sourcemap: true,
-        rollupOptions: {
+        rolldownOptions: {
           input: {
             index: resolve(__dirname, "dev/index.html"),
             yasqe: resolve(__dirname, "dev/yasqe.html"),

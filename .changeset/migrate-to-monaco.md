@@ -15,3 +15,4 @@
   - documentation to use yasgui is defined in markdown files available at `/docs`
 - Enable light/dark theme
 - Enable to import the main JS and CSS files from `@zazuko/yasgui` and `@zazuko/yasgui/style.css`
+- Update CodeMirror used by the YASR component to display raw response JSON from v5 to v6

@@ -6,7 +6,9 @@
   "main": "build/yasr.js",
   "module": "build/yasr.js",
   "types": "build/ts/src/index.d.ts",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "exports": {
     ".": {
       "types": "./build/ts/src/index.d.ts",
@@ -36,11 +38,14 @@
     "directory": "packages/yasr"
   },
   "dependencies": {
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/language": "^6.12.3",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/view": "^6.43.0",
     "@fortawesome/free-solid-svg-icons": "^5.14.0",
     "@json2csv/plainjs": "^7.0.4",
     "@zazuko/yasgui-utils": "^4.6.1",
     "@zazuko/yasqe": "^4.6.1",
-    "codemirror": "^5.51.0",
     "colors": "^1.4.0",
     "column-resizer": "^1.4.0",
     "datatables.net": "^2.0.5",
@@ -52,7 +57,6 @@
     "papaparse": "^5.3.1"
   },
   "devDependencies": {
-    "@types/codemirror": "0.0.100",
     "@types/jquery": "^3.5.32",
     "@types/lodash-es": "^4.17.3",
     "@types/n3": "^1.1.5",

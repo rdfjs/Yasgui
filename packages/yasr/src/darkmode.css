@@ -63,38 +63,22 @@ html[data-theme="dark"] {
       background: var(--yr-d-raised);
     }
 
-    /* Raw response view ships only a light theme: a glaring white
-       panel in dark mode. Give it a grey surface, light-grey text and JSON token
-       colors that stay legible on the dark background. */
-    .yasr_results .CodeMirror {
-      color: var(--yr-d-text);
-      background: var(--yr-d-surface);
+    /* Raw response view (CodeMirror 6) ships only a light theme: a glaring white
+       panel in dark mode. Override the editor's CSS variables (set in response/index.ts)
+       to get a grey surface, light-grey gutter and JSON token colors legible on dark. */
+    .yasr_results .cm-editor {
+      --yr-cm-bg: var(--yr-d-surface);
+      --yr-cm-text: var(--yr-d-text);
+      --yr-cm-gutter-bg: var(--yr-d-surface);
+      --yr-cm-gutter-text: var(--yr-d-muted);
+      --yr-cm-property: #9cdcfe;
+      --yr-cm-string: #ce9178;
+      --yr-cm-number: #b5cea8;
+      --yr-cm-atom: #569cd6;
       border-color: var(--yr-d-border);
     }
-    .yasr_results .CodeMirror-gutters {
-      background: var(--yr-d-surface);
-      border-right-color: var(--yr-d-border);
-    }
-    .yasr_results .CodeMirror-linenumber {
-      color: var(--yr-d-muted);
-    }
-    .yasr_results .CodeMirror-cursor {
-      border-left-color: var(--yr-d-text);
-    }
-    .yasr_results .CodeMirror .cm-string {
-      color: #ce9178;
-    }
-    .yasr_results .CodeMirror .cm-string.cm-property {
-      color: #9cdcfe;
-    }
-    .yasr_results .CodeMirror .cm-number {
-      color: #b5cea8;
-    }
-    .yasr_results .CodeMirror .cm-atom {
-      color: #569cd6;
-    }
     /* The overflow fade and "show more" overlay are hardcoded white in the source. */
-    .yasr_results .CodeMirror.overflow::before {
+    .yasr_results .cm-editor.overflow::before {
       background: linear-gradient(transparent 0%, rgba(37, 37, 38, 0.67) 75%, var(--yr-d-surface) 100%);
     }
     .yasr_results .overlay_content {
@@ -184,38 +168,22 @@ html[data-theme="dark"] {
         background: var(--yr-d-raised);
       }
 
-      /* Raw response view (CodeMirror) ships only a light theme: a glaring white
-         panel in dark mode. Give it a grey surface, light-grey text and JSON token
-         colors that stay legible on the dark background. */
-      .yasr_results .CodeMirror {
-        color: var(--yr-d-text);
-        background: var(--yr-d-surface);
+      /* Raw response view (CodeMirror 6) ships only a light theme: a glaring white
+         panel in dark mode. Override the editor's CSS variables (set in response/index.ts)
+         to get a grey surface, light-grey gutter and JSON token colors legible on dark. */
+      .yasr_results .cm-editor {
+        --yr-cm-bg: var(--yr-d-surface);
+        --yr-cm-text: var(--yr-d-text);
+        --yr-cm-gutter-bg: var(--yr-d-surface);
+        --yr-cm-gutter-text: var(--yr-d-muted);
+        --yr-cm-property: #9cdcfe;
+        --yr-cm-string: #ce9178;
+        --yr-cm-number: #b5cea8;
+        --yr-cm-atom: #569cd6;
         border-color: var(--yr-d-border);
       }
-      .yasr_results .CodeMirror-gutters {
-        background: var(--yr-d-surface);
-        border-right-color: var(--yr-d-border);
-      }
-      .yasr_results .CodeMirror-linenumber {
-        color: var(--yr-d-muted);
-      }
-      .yasr_results .CodeMirror-cursor {
-        border-left-color: var(--yr-d-text);
-      }
-      .yasr_results .CodeMirror .cm-property {
-        color: #9cdcfe;
-      }
-      .yasr_results .CodeMirror .cm-string {
-        color: #ce9178;
-      }
-      .yasr_results .CodeMirror .cm-number {
-        color: #b5cea8;
-      }
-      .yasr_results .CodeMirror .cm-atom {
-        color: #569cd6;
-      }
       /* The overflow fade and "show more" overlay are hardcoded white in the source. */
-      .yasr_results .CodeMirror.overflow::before {
+      .yasr_results .cm-editor.overflow::before {
         background: linear-gradient(transparent 0%, rgba(37, 37, 38, 0.67) 75%, var(--yr-d-surface) 100%);
       }
       .yasr_results .overlay_content {

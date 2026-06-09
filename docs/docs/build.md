@@ -14,7 +14,7 @@ npm run build:lib    # only the libraries (packages/*/build)
 
 For each package, `build:lib` emits into `packages/<pkg>/build`:
 
-- ESM (`*.js`), the recommended entry point.
+- ESM (`*.js`), the main entry point.
 - CSS (`*.css`).
 - TypeScript declarations.
 - The editor / language-server worker assets.
@@ -26,8 +26,7 @@ Asset URLs use a relative base (`base: "./"`) so they resolve in any consuming b
 The `dev/` folder is a working reference for integrating the packages:
 
 - `dev/qluels.ts` + `dev/qluels.worker.ts` show the qlue-ls integration.
-- `dev/index.html` / `yasqe.html` / `yasr.html` show Yasgui / Yasqe / Yasr with the language server
-  and a light/dark switcher.
+- `dev/index.html` / `yasqe.html` / `yasr.html` show Yasgui / Yasqe / Yasr with the language server.
 
 ## The documentation site
 
@@ -38,3 +37,10 @@ npm run docs:dev      # local preview with hot reload
 npm run docs:build    # build the static site into docs/.vitepress/dist
 npm run docs:preview  # preview the built site
 ```
+
+Build and test the docs website:
+
+```sh
+npm run build && npm run docs:build && npm run docs:preview
+```
+

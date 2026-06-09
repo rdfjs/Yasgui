@@ -4,22 +4,26 @@
 import type { Plugin } from "../";
 import Yasr from "../../";
 import "./index.scss";
-import _CodeMirrorModule from "codemirror";
-const CodeMirror: any = _CodeMirrorModule;
-import "codemirror/addon/fold/foldcode.js";
-import "codemirror/addon/fold/foldgutter.js";
-import "codemirror/addon/fold/xml-fold.js";
-import "codemirror/addon/fold/brace-fold.js";
-
-import "codemirror/addon/edit/matchbrackets.js";
-import "codemirror/mode/xml/xml.js";
-
-import "codemirror/mode/javascript/javascript.js";
-import "codemirror/lib/codemirror.css";
+import { EditorState } from "@codemirror/state";
+import { EditorView, lineNumbers } from "@codemirror/view";
+import { foldGutter, syntaxHighlighting, defaultHighlightStyle } from "@codemirror/language";
+import { json } from "@codemirror/lang-json";
 import { drawSvgStringAsElement, addClass, removeClass, drawFontAwesomeIconAsSvg } from "@zazuko/yasgui-utils";
 import * as faAlignIcon from "@fortawesome/free-solid-svg-icons/faAlignLeft";
 import { DeepReadonly } from "ts-essentials";
 import * as imgs from "../../imgs";
+
+const responseTheme = EditorView.theme({
+  "&": {
+    color: "var(--yr-cm-text, #000)",
+    backgroundColor: "var(--yr-cm-bg, #fff)",
+  },
+  ".cm-gutters": {
+    backgroundColor: "var(--yr-cm-gutter-bg, #f5f5f5)",
+    color: "var(--yr-cm-gutter-text, #999)",
+    border: "none",
+  },
+});
 
 export interface PluginConfig {
   maxLines: number;
@@ -28,10 +32,10 @@ export default class Response implements Plugin<PluginConfig> {
   private yasr: Yasr;
   label = "Response";
   priority = 2;
-  helpReference = "https://docs.triply.cc/yasgui/#response";
+  helpReference = "https://rdfjs.github.io/Yasgui/docs/introduction";
   private config: DeepReadonly<PluginConfig>;
   private overLay: HTMLDivElement | undefined;
-  private cm: CodeMirror.Editor | undefined;
+  private cm: EditorView | undefined;
   constructor(yasr: Yasr) {
     this.yasr = yasr;
     this.config = Response.defaults;
@@ -73,28 +77,35 @@ export default class Response implements Plugin<PluginConfig> {
       ...persistentConfig,
     };
     // When the original response is empty, use an empty string
-    let value = this.yasr.results?.getOriginalResponseAsString() || "";
+    let value = this.getResponseString();
     const lines = value.split("\n");
     if (lines.length > config.maxLines) {
       value = lines.slice(0, config.maxLines).join("\n");
     }
 
-    const codemirrorOpts: Partial<CodeMirror.EditorConfiguration> = {
-      readOnly: true,
-      lineNumbers: true,
-      lineWrapping: true,
-      foldGutter: true,
-      gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-      value: value,
-      extraKeys: { Tab: false },
-    };
+    const extensions = [
+      lineNumbers(),
+      foldGutter(),
+      // syntaxHighlighting(responseHighlight),
+      syntaxHighlighting(defaultHighlightStyle),
+      responseTheme,
+      EditorView.lineWrapping,
+      EditorState.readOnly.of(true),
+      EditorView.editable.of(false),
+    ];
     const mode = this.yasr.results?.getType();
     if (mode === "json") {
-      codemirrorOpts.mode = { name: "javascript", json: true };
+      extensions.push(json());
     }
 
-    this.cm = CodeMirror(this.yasr.resultsEl, codemirrorOpts);
-    // Don't show less originally we've already set the value in the codemirrorOpts
+    this.cm = new EditorView({
+      parent: this.yasr.resultsEl,
+      state: EditorState.create({
+        doc: value,
+        extensions,
+      }),
+    });
+    // Don't show less originally we've already set the value in the doc
     if (lines.length > config.maxLines) this.showLess(false);
   }
   private limitData(value: string) {
@@ -111,7 +122,7 @@ export default class Response implements Plugin<PluginConfig> {
   showLess(setValue = true) {
     if (!this.cm) return;
     // Add overflow
-    addClass(this.cm.getWrapperElement(), "overflow");
+    addClass(this.cm.dom, "overflow");
 
     // Remove old instance
     if (this.overLay) {
@@ -149,9 +160,9 @@ export default class Response implements Plugin<PluginConfig> {
 
     overlayContent.appendChild(downloadButton);
     this.overLay.appendChild(overlayContent);
-    this.cm.getWrapperElement().appendChild(this.overLay);
+    this.cm.dom.appendChild(this.overLay);
     if (setValue) {
-      this.cm.setValue(this.limitData(this.yasr.results?.getOriginalResponseAsString() || ""));
+      this.setValue(this.limitData(this.getResponseString()));
     }
   }
   /**
@@ -159,13 +170,40 @@ export default class Response implements Plugin<PluginConfig> {
    */
   showMore() {
     if (!this.cm) return;
-    removeClass(this.cm.getWrapperElement(), "overflow");
+    removeClass(this.cm.dom, "overflow");
     this.overLay?.remove();
     this.overLay = undefined;
-    this.cm.setValue(this.yasr.results?.getOriginalResponseAsString() || "");
-    this.cm.refresh();
+    this.setValue(this.getResponseString());
+  }
+  private setValue(value: string) {
+    if (!this.cm) return;
+    this.cm.dispatch({ changes: { from: 0, to: this.cm.state.doc.length, insert: value } });
+  }
+  /**
+   * The string shown in the editor. JSON responses are pretty-printed with a 2-space indent;
+   * anything else (and unparseable JSON) is shown verbatim.
+   */
+  private getResponseString(): string {
+    const value = this.yasr.results?.getOriginalResponseAsString() || "";
+    if (this.yasr.results?.getType() === "json") {
+      try {
+        return JSON.stringify(JSON.parse(value), null, 2);
+      } catch {
+        return value;
+      }
+    }
+    return value;
   }
   public static defaults: PluginConfig = {
     maxLines: 30,
   };
 }
+
+// NOTE: to customize JSON token colors:
+// import { tags as t } from "@lezer/highlight";
+// const responseHighlight = HighlightStyle.define([
+//   { tag: t.propertyName, color: "var(--yr-cm-property, #0451a5)" },
+//   { tag: t.string, color: "var(--yr-cm-string, #a31515)" },
+//   { tag: t.number, color: "var(--yr-cm-number, #098658)" },
+//   { tag: [t.bool, t.null], color: "var(--yr-cm-atom, #0000ff)" },
+// ]);
