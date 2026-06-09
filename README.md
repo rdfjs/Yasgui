@@ -37,6 +37,12 @@ To develop locally, run `npm run dev`
 
 Run `npm run build`. It'll store the transpiled js/css files in the `build` directory.
 
+Update prefixes from http://prefix.cc:
+
+```sh
+npm run util:prefixes
+```
+
 ## License
 
 This is a fork from Zazuko from software written by Triply.
