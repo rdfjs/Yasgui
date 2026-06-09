@@ -2,8 +2,8 @@
   "extends": "./tsconfig-build.json",
   "compilerOptions": {
     "outDir": "./build/test",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "commonjs",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": false,
     "incremental": true,
