@@ -1,5 +1,6 @@
 import * as Autocompleter from "./";
 import { sortBy } from "lodash-es";
+import bundledPrefixes from "../prefixes.json";
 var tokenTypes: { [id: string]: "prefixed" | "var" } = {
   "string-2": "prefixed",
   atom: "var",
@@ -90,21 +91,27 @@ var conf: Autocompleter.CompleterConfig = {
     return true;
   },
   get: function (yasqe) {
-    return fetch(yasqe.config.prefixCcApi)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch prefixes");
-        }
-        return response.json();
-      })
-      .then((resp) => {
-        const prefixArray: string[] = [];
-        for (const prefix in resp) {
-          const completeString = `${prefix}: <${resp[prefix]}>`;
-          prefixArray.push(completeString); // the array we want to store in local storage
-        }
-        return prefixArray.sort();
-      });
+    const prefixes = yasqe.config.prefixCcApi
+      ? fetch(yasqe.config.prefixCcApi)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Failed to fetch prefixes");
+            }
+            return response.json();
+          })
+          .catch((e) => {
+            console.warn("Could not fetch prefixes, using bundled prefixes instead", e);
+            return bundledPrefixes;
+          })
+      : Promise.resolve(bundledPrefixes);
+    return prefixes.then((resp) => {
+      const prefixArray: string[] = [];
+      for (const prefix in resp) {
+        const completeString = `${prefix}: <${resp[prefix]}>`;
+        prefixArray.push(completeString); // the array we want to store in local storage
+      }
+      return prefixArray.sort();
+    });
   },
   preProcessToken: function (yasqe, token) {
     var previousToken = yasqe.getPreviousNonWsToken(yasqe.getDoc().getCursor().line, token);

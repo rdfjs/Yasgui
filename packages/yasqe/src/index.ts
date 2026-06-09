@@ -1035,7 +1035,7 @@ export interface Config extends Partial<CodeMirror.EditorConfiguration> {
   resizeable: boolean;
   editorHeight: string;
   queryingDisabled: string | undefined; // The string will be the message displayed when hovered
-  prefixCcApi: string; // the suggested default prefixes URL API getter
+  prefixCcApi: string | null; // URL of a prefixes API to fetch suggestions from; when null the bundled prefixes are used
 }
 export interface PersistentConfig {
   query: string;
