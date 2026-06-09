@@ -92,7 +92,7 @@ export async function executeQuery(yasqe: Yasqe, config?: YasqeAjaxConfig): Prom
       populatedConfig.url = url.toString();
     }
     const request = new Request(populatedConfig.url, fetchOptions);
-    yasqe.emit("query", request, abortController);
+    yasqe.emit("query", yasqe, request, abortController);
     const response = await fetch(request);
     if (!response.ok) {
       throw new Error((await response.text()) || response.statusText);
@@ -106,16 +106,16 @@ export async function executeQuery(yasqe: Yasqe, config?: YasqeAjaxConfig): Prom
       type: response.type,
       content: await response.text(),
     };
-    yasqe.emit("queryResponse", queryResponse, Date.now() - queryStart);
-    yasqe.emit("queryResults", queryResponse.content, Date.now() - queryStart);
+    yasqe.emit("queryResponse", yasqe, queryResponse, Date.now() - queryStart);
+    yasqe.emit("queryResults", yasqe, queryResponse.content, Date.now() - queryStart);
     return queryResponse;
   } catch (e) {
     if (e instanceof Error && e.message === "Aborted") {
       // The query was aborted. We should not do or draw anything
     } else {
-      yasqe.emit("queryResponse", e, Date.now() - queryStart);
+      yasqe.emit("queryResponse", yasqe, e, Date.now() - queryStart);
     }
-    yasqe.emit("error", e);
+    yasqe.emit("error", yasqe, e);
     throw e;
   }
 }

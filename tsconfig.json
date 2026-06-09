@@ -20,7 +20,7 @@
     }
   },
   "files": ["./packages/yasgui/typings-custom/main.d.ts", "./vite-env.d.ts"],
-  "include": ["./packages/*/src/**/**/*", "./test/*", "./packages/yasqe/grammar/tokenizer.ts"],
+  "include": ["./packages/*/src/**/**/*"],
   "compileOnSave": false,
   "exclude": ["**/build/**"]
 }

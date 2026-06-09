@@ -1,5 +1,6 @@
 .yasqe {
-  .CodeMirror {
+  position: relative;
+  .cm-editor {
     min-height: 60px;
   }
   .svgImg {
@@ -10,9 +11,6 @@
     color: red;
     font-weight: bold;
     float: left;
-  }
-  .CodeMirror-hint {
-    max-width: 30em;
   }
   .notificationContainer {
     width: 100%;

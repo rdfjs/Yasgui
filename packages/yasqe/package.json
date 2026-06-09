@@ -5,7 +5,9 @@
   "main": "build/yasqe.min.js",
   "module": "build/yasqe.esm.js",
   "types": "build/ts/src/index.d.ts",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "exports": {
     ".": {
       "types": "./build/ts/src/index.d.ts",
@@ -34,13 +36,20 @@
     "directory": "packages/yasqe"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.18.0",
+    "@codemirror/commands": "^6.6.0",
+    "@codemirror/language": "^6.10.2",
+    "@codemirror/lint": "^6.8.1",
+    "@codemirror/lsp-client": "^6.2.4",
+    "@codemirror/search": "^6.5.6",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.28.0",
     "@zazuko/yasgui-utils": "^4.6.1",
-    "codemirror": "^5.51.0",
+    "events": "^3.3.0",
     "lodash-es": "^4.18.1",
     "query-string": "^6.10.1"
   },
   "devDependencies": {
-    "@types/codemirror": "0.0.100",
     "@types/lodash-es": "^4.17.3",
     "@types/node": "^22.5.4"
   },

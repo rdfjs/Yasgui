@@ -1,65 +1,48 @@
-import { default as Yasqe, Token } from "./";
+import { default as Yasqe } from "./";
+
 export type Prefixes = { [prefixLabel: string]: string };
+
+const PREFIX_REGEX = /^\s*PREFIX\s+([\w-]*)\s*:\s*<([^>]*)>\s*$/gim;
+
 export function addPrefixes(yasqe: Yasqe, prefixes: string | Prefixes) {
-  var existingPrefixes = yasqe.getPrefixesFromQuery();
-  //for backwards compatability, we stil support prefixes value as string (e.g. 'rdf: <http://fbfgfgf>'
-  if (typeof prefixes == "string") {
+  const existing = getPrefixesFromQuery(yasqe);
+  if (typeof prefixes === "string") {
     addPrefixAsString(yasqe, prefixes);
   } else {
-    for (var pref in prefixes) {
-      if (!(pref in existingPrefixes)) addPrefixAsString(yasqe, pref + ": <" + prefixes[pref] + ">");
+    for (const pref in prefixes) {
+      if (!(pref in existing)) addPrefixAsString(yasqe, pref + ": <" + prefixes[pref] + ">");
     }
   }
-  yasqe.collapsePrefixes(false);
 }
 
 export function addPrefixAsString(yasqe: Yasqe, prefixString: string) {
-  yasqe.getDoc().replaceRange("PREFIX " + prefixString + "\n", {
-    line: 0,
-    ch: 0,
-  });
-
-  yasqe.collapsePrefixes(false);
+  const line = "PREFIX " + prefixString + "\n";
+  yasqe.dispatch({ changes: { from: 0, to: 0, insert: line } });
 }
+
 export function removePrefixes(yasqe: Yasqe, prefixes: Prefixes) {
-  var escapeRegex = function (string: string) {
-    //taken from http://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript/3561711#3561711
-    return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-  };
-  for (var pref in prefixes) {
-    yasqe.setValue(
-      yasqe
-        .getValue()
-        .replace(new RegExp("PREFIX\\s*" + pref + ":\\s*" + escapeRegex("<" + prefixes[pref] + ">") + "\\s*", "ig"), "")
+  const escapeRegex = (s: string) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+  let value = yasqe.getValue();
+  for (const pref in prefixes) {
+    value = value.replace(
+      new RegExp("PREFIX\\s*" + pref + ":\\s*" + escapeRegex("<" + prefixes[pref] + ">") + "\\s*", "ig"),
+      "",
     );
   }
-  yasqe.collapsePrefixes(false);
+  yasqe.setValue(value);
 }
 
 /**
- * Get defined prefixes from query as array, in format {"prefix:" "uri"}
- *
- * @param cm
- * @returns {Array}
+ * Extract PREFIX declarations from the query value via regex.
  */
-export function getPrefixesFromQuery(yasqe: Yasqe): Token["state"]["prefixes"] {
-  //Use precise here. We want to be sure we use the most up to date state. If we're
-  //not, we might get outdated prefixes from the current query (creating loops such
-  //as https://github.com/TriplyDB/YASGUI/issues/84)
-  return yasqe.getTokenAt(
-    { line: yasqe.getDoc().lastLine(), ch: yasqe.getDoc().getLine(yasqe.getDoc().lastLine()).length },
-    true
-  ).state.prefixes;
-}
-
-export function getIndentFromLine(yasqe: Yasqe, line: number, charNumber: number = 1): string {
-  var token = yasqe.getTokenAt({
-    line: line,
-    ch: charNumber,
-  });
-  if (token == null || token == undefined || token.type != "ws") {
-    return "";
-  } else {
-    return token.string + getIndentFromLine(yasqe, line, token.end + 1);
+export function getPrefixesFromQuery(yasqe: Yasqe): Prefixes {
+  const value = yasqe.getValue();
+  const out: Prefixes = {};
+  // Reset regex state since /g
+  PREFIX_REGEX.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = PREFIX_REGEX.exec(value)) !== null) {
+    out[m[1]] = m[2];
   }
+  return out;
 }

@@ -1,36 +1,17 @@
 .yasqe {
-  .CodeMirror {
+  .cm-editor {
     line-height: 1.5em;
     font-size: 14px;
     border: 1px solid #d1d1d1;
+    height: 100%;
   }
-
-  span.cm-error {
-    border-bottom: 2px dotted red;
+  .cm-editor.cm-focused {
+    outline: none;
   }
-  .gutterErrorBar {
-    width: 4px;
-  }
-
-  .CodeMirror-foldmarker {
-    color: #6e2500;
-    text-shadow: #ff935e 1px 1px 2px, #ff935e -1px -1px 2px, #ff935e 1px -1px 2px, #ff935e -1px 1px 2px;
-    font-size: 19px;
+  .cm-scroller {
+    font-family: monospace;
   }
   .cm-matchhighlight {
     background-color: #dbdeed;
-  }
-}
-// Put these outside of yasqe as the root element can be changed
-.CodeMirror-hints.default {
-  max-width: 1000px;
-}
-.CodeMirror-hints.default li {
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
-@media only screen and (max-width: 1000px) {
-  .CodeMirror-hints.default {
-    max-width: 800px;
   }
 }

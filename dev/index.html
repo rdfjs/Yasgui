@@ -20,6 +20,16 @@
         color: black;
         font-size: 110%;
       }
+      #format-btn {
+        padding: 6px 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #fff;
+        cursor: pointer;
+      }
+      #format-btn:hover {
+        background: #f5f5f5;
+      }
     </style>
     <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" />
     <title></title>
@@ -36,18 +46,62 @@
       </nav>
     </div>
 
+    <div style="padding: 5px 10px">
+      <button id="format-btn">Format query</button>
+    </div>
+
     <div id="yasgui"></div>
 
     <script type="module">
       import Yasgui from "@zazuko/yasgui";
-      window.onpageshow = function () {
-        window.yasgui = new Yasgui(document.getElementById("yasgui"), {
-          corsProxy: "",
-          requestConfig: {
-            endpoint: "https://dbpedia.org/sparql",
+      import { formatDocument } from "@codemirror/lsp-client";
+      import { createQlueLsClient, setQlueLsBackend } from "./qlueLs.ts";
+
+      (async () => {
+        const endpoint = "https://sparql.uniprot.org/sparql/";
+        // The embedder owns the language server. One qlue-ls client is shared by all
+        // tabs; Yasqe auto-assigns a unique document URI per editor.
+        // Dummy backend: dbpedia endpoint with a fixed prefix map, everything else default.
+        const backend = {
+          endpoint,
+          prefixMap: {
+            rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+            rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+            owl: "http://www.w3.org/2002/07/owl#",
+            xsd: "http://www.w3.org/2001/XMLSchema#",
+            skos: "http://www.w3.org/2004/02/skos/core#",
+            foaf: "http://xmlns.com/foaf/0.1/",
+            dc: "http://purl.org/dc/elements/1.1/",
+            dct: "http://purl.org/dc/terms/",
+            dbo: "http://dbpedia.org/ontology/",
+            dbp: "http://dbpedia.org/property/",
+            dbr: "http://dbpedia.org/resource/",
+            geo: "http://www.w3.org/2003/01/geo/wgs84_pos#",
           },
-        });
-      };
+        };
+        try {
+          // Second arg are qlue-ls settings
+          const client = await createQlueLsClient(backend, { completion: { timeoutMs: 10000, resultSizeLimit: 50 } });
+          window.yasgui = new Yasgui(
+            document.getElementById("yasgui"),
+            { corsProxy: "", requestConfig: { endpoint }, yasqe: { lsp: { client } } }
+          );
+
+          // Keep qlue-ls active backend in sync with each tab SPARQL endpoint
+          const watchTab = (tab) => tab?.on("endpointChange", (t, ep) => setQlueLsBackend(client, { ...backend, endpoint: ep }));
+          Object.values(window.yasgui._tabs).forEach(watchTab);
+          window.yasgui.on("tabAdd", (y, tabId) => watchTab(y.getTab(tabId)));
+        } catch (e) {
+          console.warn("Could not start qlue-ls; running editors without a language server", e);
+          window.yasgui = new Yasgui(document.getElementById("yasgui"), { corsProxy: "", requestConfig: { endpoint } });
+        }
+      })();
+
+      // Format the active tab editor through the language server (textDocument/formatting).
+      document.getElementById("format-btn").addEventListener("click", () => {
+        const view = window.yasgui?.getTab()?.getYasqe()?.cm;
+        if (view) formatDocument(view);
+      });
     </script>
   </body>
 </html>
