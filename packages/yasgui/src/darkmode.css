@@ -99,7 +99,12 @@ html[data-theme="dark"] {
     .clearEndpointBtn {
       background-color: var(--yg-d-border);
       border-color: var(--yg-d-border);
-      color: var(--yg-d-muted);
+      color: var(--yg-d-text);
+    }
+    .clearEndpointBtn:hover {
+      opacity: 1;
+      color: #ffffff;
+      background-color: var(--yg-d-hover);
     }
 
     .tabMenu {
@@ -236,7 +241,12 @@ html[data-theme="dark"] {
       .clearEndpointBtn {
         background-color: var(--yg-d-border);
         border-color: var(--yg-d-border);
-        color: var(--yg-d-muted);
+        color: var(--yg-d-text);
+      }
+      .clearEndpointBtn:hover {
+        opacity: 1;
+        color: #ffffff;
+        background-color: var(--yg-d-hover);
       }
 
       .tabMenu {

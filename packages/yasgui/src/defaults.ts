@@ -34,7 +34,6 @@ export default function initialize(): Config<CatalogueItem> {
           "https://sparql.dblp.org/sparql",
           "https://dbpedia.org/sparql",
           "https://query.wikidata.org/sparql",
-          "https://commons-query.wikimedia.org/sparql",
           "https://qlever.dev/api/wikidata",
           "https://qlever.dev/api/wikimedia-commons",
           "https://qlever.dev/api/osm-planet",

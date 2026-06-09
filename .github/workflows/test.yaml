@@ -1,6 +1,8 @@
 name: Run tests
 
-on: push
+on:
+  push:
+  workflow_dispatch:
 
 jobs:
   tests:
@@ -8,10 +10,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.3
 
       - name: Set up NodeJS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.4.0
         with:
           node-version: "lts/*"
           cache: npm
@@ -27,3 +29,50 @@ jobs:
 
       - name: Run tests
         run: npm run test
+
+  docs:
+    name: Deploy to GitHub Pages
+    needs: tests
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    # Allow only one concurrent deployment, skip runs queued between the in-progress and latest.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.3
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: "lts/*"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build libraries
+        run: npm run build:lib
+
+      - name: Build docs
+        run: npm run docs:build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6.0.0
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5.0.0
+        with:
+          path: docs/.vitepress/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5.0.0

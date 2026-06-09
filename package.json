@@ -22,7 +22,10 @@
     "unit-test": "tsc -p ./tsconfig-test.json && mocha $(find ./build/test -name '*-test.js') --require source-map-support/register || true",
     "puppeteer-test": "tsc -p ./tsconfig-test.json && mocha --timeout 30000 ./build/test/test/run.js --require source-map-support/register",
     "prerelease": "npm run build && npm run test",
-    "release": "changeset publish"
+    "release": "changeset publish",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "lint-staged": {
     "*.ts?(x)": [
@@ -36,6 +39,7 @@
   "devDependencies": {
     "@changesets/cli": "^2.29.7",
     "@codingame/esbuild-import-meta-url-plugin": "^1.0.3",
+    "@matdata/yasgui-graph-plugin": "^1.6.2",
     "@types/chai": "^5.2.3",
     "@types/fs-extra": "^11.0.4",
     "@types/mocha": "^10.0.10",
@@ -60,7 +64,9 @@
     "typescript-eslint": "^8.60.1",
     "vite": "^8.0.16",
     "vite-plugin-dts": "^5.0.2",
-    "vite-plugin-wasm": "^3.4.1"
+    "vite-plugin-wasm": "^3.4.1",
+    "vitepress": "^1.6.4",
+    "yasgui-geo-tg": "^1.1.2"
   },
   "prettier": {
     "printWidth": 120

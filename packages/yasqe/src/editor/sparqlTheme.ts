@@ -16,53 +16,53 @@ export const sparqlThemeDark = {
   // colors mirror the TextMate scopes below so highlighting stays consistent
   semanticHighlighting: true,
   semanticTokenColors: {
-    keyword: "#859900", // green - matches keyword.control.sparql
-    function: "#cb4b16", // orange - matches keyword.operator.function.sparql
-    variable: "#268bd2", // blue - matches variable.other.sparql
-    string: "#b58900", // yellow - matches string
-    number: "#2aa198", // cyan - matches constant.numeric
+    keyword: "#6c71c4", // purple - matches keyword.control.sparql
+    function: "#2aa198", // cyan - matches keyword.operator.function.sparql (STRDT, CONCAT, ...)
+    variable: "#93a1a1", // base1 grey - matches variable.other.sparql
+    string: "#859900", // green - matches string
+    number: "#cb4b16", // orange - matches constant.numeric, alt: #FF5600
     comment: "#586e75", // base01 - solarized
-    operator: "#93a1a1", // base1 - matches keyword.symbol
-    namespace: "#FF5600", // orange - matches variable.prefix.sparql
-    // namespace: { foreground: "#FF5600", fontStyle: "italic bold" },
+    operator: "#2aa198", // cyan - matches keyword.symbol (*, ...)
+    namespace: "#b58900", // gold - matches variable.prefix.sparql
+    // namespace: { foreground: "#b58900", fontStyle: "italic bold" },
   },
   // Used by TextMate grammars (fallback if no semantic colors provided by language server)
   tokenColors: [
     {
       scope: "keyword.control.sparql",
       settings: {
-        foreground: "#859900", // green
+        foreground: "#6c71c4", // purple
         // fontStyle: "bold italic",
       },
     },
     {
       scope: "keyword.operator.function.sparql",
       settings: {
-        foreground: "#cb4b16", // orange
+        foreground: "#2aa198", // cyan
       },
     },
     {
       scope: "keyword.operator.prefixdecl.sparql",
       settings: {
-        foreground: "#859900", // green
+        foreground: "#6c71c4", // purple
       },
     },
     {
       scope: "variable.prefix.sparql",
       settings: {
-        foreground: "#FF5600", // orange
+        foreground: "#b58900", // gold
       },
     },
     {
       scope: "variable.reference.sparql",
       settings: {
-        foreground: "#FF5600", // orange
+        foreground: "#b58900", // gold
       },
     },
     {
       scope: "variable.other.sparql",
       settings: {
-        foreground: "#268bd2", // blue
+        foreground: "#93a1a1", // base1 grey
       },
     },
     {
@@ -74,19 +74,19 @@ export const sparqlThemeDark = {
     {
       scope: "constant.numeric",
       settings: {
-        foreground: "#2aa198", // cyan
+        foreground: "#cb4b16", // orange
       },
     },
     {
       scope: "string",
       settings: {
-        foreground: "#b58900", // yellow
+        foreground: "#859900", // green
       },
     },
     {
       scope: "keyword.symbol",
       settings: {
-        foreground: "#93a1a1", // light gray
+        foreground: "#2aa198", // cyan
       },
     },
   ],
@@ -177,7 +177,7 @@ export const sparqlThemeLight = {
     {
       scope: "keyword.symbol",
       settings: {
-        foreground: "#000",
+        foreground: "#000000",
       },
     },
   ],
