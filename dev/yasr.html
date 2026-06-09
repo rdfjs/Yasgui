@@ -2,58 +2,44 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <style>
-      body {
-        font-family: "Roboto", sans-serif;
-        margin: 0px;
-      }
-      .navItem a {
-        color: #555;
-        text-decoration: none;
-        padding: 5px;
-        padding-right: 15px;
-      }
-      .navItem a:hover {
-        color: #222;
-      }
-      .navItem.active a {
-        color: black;
-        font-size: 110%;
-      }
-    </style>
+    <link rel="stylesheet" href="./style.css" />
     <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" />
     <title>YASR</title>
   </head>
   <body>
-    <div style="background:#eee">
+    <div class="navBar">
       <nav style="display: flex">
-        <img src="/yasgui.png" style="max-height:50px;padding:5px;margin-left: 10px" alt="Yasgui Logo" />
+        <img class="logo" src="/yasgui.png" style="max-height:50px;padding:5px;margin-left: 10px" alt="Yasgui Logo" />
         <ul style="display: flex; list-style: none; align-self: center">
           <li class="navItem"><a class="nav-link" href="/">Yasgui</a></li>
           <li class="navItem"><a class="nav-link" href="yasqe">Yasqe</a></li>
           <li class="navItem active"><a class="nav-link" href="yasr">Yasr</a></li>
         </ul>
+        <button class="themeToggle" id="darkModeToggle" type="button"></button>
       </nav>
     </div>
-
     <div id="yasqe"></div>
     <div id="yasr"></div>
     <script type="module">
       import Yasqe from "@zazuko/yasqe";
       import Yasr from "@zazuko/yasr";
+      import { setupThemeToggle, createQlueLsWorker, configureQlueLsBackend, DEMO_ENDPOINT } from "./qluels";
+
       window.onpageshow = function () {
+        const theme = setupThemeToggle((t) => window.yasqe?.setTheme(t));
         window.yasqe = new Yasqe(document.getElementById("yasqe"), {
-          requestConfig: {
-            endpoint: "https://dbpedia.org/sparql",
-          },
+          theme,
+          requestConfig: { endpoint: DEMO_ENDPOINT },
+          languageServerWorker: createQlueLsWorker,
+          onLanguageClientReady: (languageClient) => configureQlueLsBackend(languageClient, DEMO_ENDPOINT),
         });
-        yasqe.on("queryResponse", function (yasqe, response, duration) {
+        window.yasqe.on("queryResponse", function (yasqe, response, duration) {
           console.log({ response: response });
           window.yasr.setResponse(response, duration);
         });
         window.yasr = new Yasr(document.getElementById("yasr"), {
           prefixes: function () {
-            return yasqe.getPrefixesFromQuery();
+            return window.yasqe.getPrefixesFromQuery();
           },
         });
       };

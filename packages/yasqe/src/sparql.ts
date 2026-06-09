@@ -54,7 +54,7 @@ export function getAjaxConfig(
 export async function executeQuery(yasqe: Yasqe, config?: YasqeAjaxConfig): Promise<any> {
   const queryStart = Date.now();
   try {
-    yasqe.emit("queryBefore", yasqe, config);
+    yasqe.emit("queryBefore", config);
     const populatedConfig = getAjaxConfig(yasqe, config);
     if (!populatedConfig) {
       return; // Nothing to query

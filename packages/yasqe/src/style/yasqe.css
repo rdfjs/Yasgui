@@ -1,0 +1,153 @@
+/* CSS Custom Properties for yasqe theming (light defaults) */
+:root {
+  --yasqe-text: #000000;
+  --yasqe-border: #d1d1d1;
+  --yasqe-notification-bg: #eeeeee;
+  --yasqe-notification-text: #999999;
+  --yasqe-tooltip-bg: rgba(0, 0, 0, 0.8);
+  --yasqe-tooltip-text: #ffffff;
+  --yasqe-error: #ff0000;
+  --yasqe-btn-bg: #ffffff;
+  --yasqe-btn-text: #333333;
+  --yasqe-btn-border: #cccccc;
+  --yasqe-btn-hover-bg: #ebebeb;
+  --yasqe-btn-hover-border: #adadad;
+  --yasqe-accent: #337ab7;
+  --yasqe-accent-text: #ffffff;
+  --yasqe-popup-bg: #ffffff;
+  --yasqe-popup-border: #e3e3e3;
+  --yasqe-icon: #505050;
+}
+
+/* Dark values, shared by the explicit toggle and the OS preference below */
+html[data-theme="dark"] {
+  --yasqe-text: #d4d4d4;
+  --yasqe-border: #3e3e3e;
+  --yasqe-notification-bg: #2d2d30;
+  --yasqe-notification-text: #cccccc;
+  --yasqe-tooltip-bg: rgba(255, 255, 255, 0.1);
+  --yasqe-tooltip-text: #ffffff;
+  --yasqe-error: #ff6b6b;
+  --yasqe-btn-bg: #2d2d30;
+  --yasqe-btn-text: #d4d4d4;
+  --yasqe-btn-border: #3e3e3e;
+  --yasqe-btn-hover-bg: #3e3e3e;
+  --yasqe-btn-hover-border: #555555;
+  --yasqe-accent: #4fc3f7;
+  --yasqe-accent-text: #1e1e1e;
+  --yasqe-popup-bg: #2d2d30;
+  --yasqe-popup-border: #3e3e3e;
+  --yasqe-icon: #cccccc;
+}
+
+/* Auto dark mode following the OS/browser preference, unless the user forced light */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    --yasqe-text: #d4d4d4;
+    --yasqe-border: #3e3e3e;
+    --yasqe-notification-bg: #2d2d30;
+    --yasqe-notification-text: #cccccc;
+    --yasqe-tooltip-bg: rgba(255, 255, 255, 0.1);
+    --yasqe-tooltip-text: #ffffff;
+    --yasqe-error: #ff6b6b;
+    --yasqe-btn-bg: #2d2d30;
+    --yasqe-btn-text: #d4d4d4;
+    --yasqe-btn-border: #3e3e3e;
+    --yasqe-btn-hover-bg: #3e3e3e;
+    --yasqe-btn-hover-border: #555555;
+    --yasqe-accent: #4fc3f7;
+    --yasqe-accent-text: #1e1e1e;
+    --yasqe-popup-bg: #2d2d30;
+    --yasqe-popup-border: #3e3e3e;
+    --yasqe-icon: #cccccc;
+  }
+}
+
+.yasqe {
+  position: relative;
+  color: var(--yasqe-text);
+
+  .svgImg {
+    display: inline-block;
+  }
+  span.shortlinkErr {
+    font-size: small;
+    color: var(--yasqe-error);
+    font-weight: bold;
+    float: left;
+  }
+  .CodeMirror-hint {
+    max-width: 30em;
+  }
+  .notificationContainer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    bottom: 0;
+  }
+  .notification {
+    z-index: 4;
+    padding: 0 5px;
+    max-height: 0px;
+    color: var(--yasqe-notification-text);
+    background-color: var(--yasqe-notification-bg);
+    font-size: 90%;
+    text-align: center;
+    transition: max-height 0.2s ease-in;
+    border-top-right-radius: 2px;
+    border-top-left-radius: 2px;
+  }
+  .notification.active {
+    max-height: 3rem;
+  }
+
+  .parseErrorIcon {
+    width: 13px;
+    height: 13px;
+    margin-top: 2px;
+    margin-left: 2px;
+    svg {
+      g {
+        fill: var(--yasqe-error);
+      }
+    }
+  }
+
+  .yasqe_tooltip {
+    background: var(--yasqe-tooltip-bg);
+    border-radius: 5px;
+    color: var(--yasqe-tooltip-text);
+    padding: 5px 15px;
+    width: 220px;
+    white-space: pre-wrap;
+    white-space: normal;
+    margin-top: 5px;
+  }
+  .notificationLoader {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+  }
+  .resizeWrapper {
+    width: 100%;
+    height: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: row-resize;
+  }
+  .resizeChip {
+    width: 20%;
+    height: 4px;
+    background-color: var(--yasqe-border);
+    visibility: hidden;
+    border-radius: 2px;
+  }
+  /* Show resizeChip when yasqe is hovered */
+  &:hover {
+    .resizeChip {
+      visibility: visible;
+    }
+  }
+}

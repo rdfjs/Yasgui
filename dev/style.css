@@ -1,0 +1,87 @@
+body {
+  font-family: "Roboto", sans-serif;
+  margin: 0px;
+}
+.navItem a {
+  color: #555;
+  text-decoration: none;
+  padding: 5px;
+  padding-right: 15px;
+}
+.navItem a:hover {
+  color: #222;
+}
+.navItem.active a {
+  color: black;
+  font-size: 110%;
+}
+/* Light/dark theme toggle */
+.themeToggle {
+  margin-left: auto;
+  align-self: center;
+  margin-right: 12px;
+  padding: 5px 10px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.themeToggle:hover {
+  background: rgba(0, 0, 0, 0.13);
+}
+.navBar {
+  background: #eee;
+}
+/* Light/dark theme */
+html[data-theme="dark"] body {
+  background: #1e1e1e;
+  color: #d4d4d4;
+}
+html[data-theme="dark"] .navBar {
+  background: #2d2d30;
+}
+html[data-theme="dark"] .navItem a,
+html[data-theme="dark"] .themeToggle {
+  color: #ccc;
+}
+html[data-theme="dark"] .navItem.active a {
+  color: #fff;
+}
+html[data-theme="dark"] .logo {
+  filter: invert(1);
+}
+html[data-theme="dark"] .themeToggle {
+  background: rgba(255, 255, 255, 0.1);
+}
+html[data-theme="dark"] .themeToggle:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .themeToggle {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  html:not([data-theme="light"]) .themeToggle:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+  html:not([data-theme="light"]) .logo {
+    filter: invert(1);
+  }
+  html:not([data-theme="light"]) body {
+    background: #1e1e1e;
+    color: #d4d4d4;
+  }
+  html:not([data-theme="light"]) .navBar {
+    background: #2d2d30;
+  }
+  html:not([data-theme="light"]) .navItem a,
+  html:not([data-theme="light"]) .themeToggle {
+    color: #ccc;
+  }
+  html:not([data-theme="light"]) .navItem.active a {
+    color: #fff;
+  }
+}

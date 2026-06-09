@@ -8,6 +8,11 @@ Delimiters used by datatables
 */
 
 .yasr {
+  // Row-number (first) column: center it, overriding DataTables' automatic numeric right-align.
+  // Not nested under .dataTables_wrapper because DataTables 2.x wraps the table in .dt-layout-* instead.
+  table.dataTable td.rowNumberCol {
+    text-align: center;
+  }
   .tableControls {
     display: flex;
     align-items: center;
@@ -103,6 +108,7 @@ Delimiters used by datatables
           &.rowNumber {
             word-break: keep-all;
             overflow: visible;
+            text-align: center;
           }
         }
         .tableEllipse {

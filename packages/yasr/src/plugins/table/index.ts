@@ -162,6 +162,7 @@ export default class Table implements Plugin<PluginConfig> {
     return [
       {
         name: "",
+        className: "rowNumberCol",
         searchable: false,
         width: `${this.getSizeFirstColumn()}px`,
         type: "num",
