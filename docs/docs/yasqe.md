@@ -5,7 +5,7 @@ client. Use it when you want only the editor, without tabs or the result viewer.
 
 ```ts
 import Yasqe from "@zazuko/yasqe";
-import "@zazuko/yasqe/build/yasqe.min.css";
+import "@zazuko/yasqe/style.css";
 import { createQlueLsWorker, configureQlueLsBackend } from "./qlue-ls";
 
 const yasqe = new Yasqe(document.getElementById("yasqe")!, {

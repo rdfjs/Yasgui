@@ -14,3 +14,4 @@
   - main page is a bare Yasgui with qlue-ls language server
   - documentation to use yasgui is defined in markdown files available at `/docs`
 - Enable light/dark theme
+- Enable to import the main JS and CSS files from `@zazuko/yasgui` and `@zazuko/yasgui/style.css`

@@ -37,6 +37,9 @@ export default defineConfig({
     // Monaco + qlue-ls language-server workers are ES modules and load wasm
     format: "es",
     plugins: () => [wasm()],
+    // Emit each worker as 1 self-contained file.
+    // Inlining keeps every worker dependency-free and copyable as a single asset.
+    rollupOptions: { output: { inlineDynamicImports: true } },
   },
   plugins: [
     ...(usesMonaco ? [wasm()] : []),
@@ -78,6 +81,8 @@ export default defineConfig({
           // load a second instance, which breaks the vscode service registry and the editor silently fails to mount
           external: [],
           output: {
+            // Emit 1 self-contained JS file (no code-split sibling chunks)
+            inlineDynamicImports: true,
             assetFileNames: (info) =>
               info.names?.some((n) => n.endsWith(".css")) ? `${libPackage}.css` : "[name][extname]",
           },

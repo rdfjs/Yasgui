@@ -24,10 +24,10 @@ its workers via `import.meta.url`, which UMD can't do), so use a modern bundler 
 Each package ships its own CSS that you must import once:
 
 ```js
-import "@zazuko/yasgui/build/yasgui.css";
+import "@zazuko/yasgui/style.css";
 // or for standalone use:
-// import "@zazuko/yasqe/build/yasqe.css";
-// import "@zazuko/yasr/build/yasr.css";
+// import "@zazuko/yasqe/style.css";
+// import "@zazuko/yasr/style.css";
 ```
 
 ## 2. Bundler setup (Vite)
@@ -130,7 +130,7 @@ export {};
 
 ```ts
 import Yasgui from "@zazuko/yasgui";
-import "@zazuko/yasgui/build/yasgui.css";
+import "@zazuko/yasgui/style.css";
 import { createQlueLsWorker, configureQlueLsBackend } from "./qlue-ls";
 
 const yasgui = new Yasgui(document.getElementById("yasgui")!, {

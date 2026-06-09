@@ -5,7 +5,7 @@ together.
 
 ```ts
 import Yasgui from "@zazuko/yasgui";
-import "@zazuko/yasgui/build/yasgui.min.css";
+import "@zazuko/yasgui/style.css";
 import { createQlueLsWorker, configureQlueLsBackend } from "./qlue-ls";
 
 const yasgui = new Yasgui(document.getElementById("yasgui")!, {

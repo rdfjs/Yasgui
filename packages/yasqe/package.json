@@ -12,6 +12,8 @@
       "types": "./build/ts/src/index.d.ts",
       "import": "./build/yasqe.js"
     },
+    "./index.js": "./build/yasqe.js",
+    "./style.css": "./build/yasqe.css",
     "./*": "./*"
   },
   "license": "MIT",

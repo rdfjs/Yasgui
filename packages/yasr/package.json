@@ -12,6 +12,8 @@
       "types": "./build/ts/src/index.d.ts",
       "import": "./build/yasr.js"
     },
+    "./index.js": "./build/yasr.js",
+    "./style.css": "./build/yasr.css",
     "./*": "./*"
   },
   "license": "MIT",

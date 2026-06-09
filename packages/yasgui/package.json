@@ -12,6 +12,8 @@
       "types": "./build/ts/src/index.d.ts",
       "import": "./build/yasgui.js"
     },
+    "./index.js": "./build/yasgui.js",
+    "./style.css": "./build/yasgui.css",
     "./*": "./*"
   },
   "license": "MIT",

@@ -8,8 +8,8 @@ Wire it to a [Yasqe](./yasqe) instance (or feed it a response from any source):
 ```ts
 import Yasqe from "@zazuko/yasqe";
 import Yasr from "@zazuko/yasr";
-import "@zazuko/yasqe/build/yasqe.min.css";
-import "@zazuko/yasr/build/yasr.min.css";
+import "@zazuko/yasqe/style.css";
+import "@zazuko/yasr/style.css";
 
 const yasqe = new Yasqe(document.getElementById("yasqe")!, {
   requestConfig: { endpoint: "https://dbpedia.org/sparql" },
