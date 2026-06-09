@@ -1,4 +1,5 @@
 import CodeMirror from "codemirror";
+import grammar from "./_tokenizer-table";
 export interface State {
   tokenize: (stream: CodeMirror.StringStream, state: State) => string;
   inLiteral: "SINGLE" | "DOUBLE" | undefined;
@@ -45,7 +46,6 @@ export interface Token {
   start: number;
 }
 export default function (config: CodeMirror.EditorConfiguration): CodeMirror.Mode<State> {
-  const grammar = require("./_tokenizer-table.js");
   const ll1_table = grammar.table;
 
   const IRI_REF = '<[^<>"`|{}^\\\x00-\x20]*>';

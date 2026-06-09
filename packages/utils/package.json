@@ -3,7 +3,17 @@
   "version": "4.6.1",
   "description": "Utils for YASGUI libs",
   "main": "build/utils.min.js",
+  "module": "build/utils.esm.js",
   "types": "build/ts/src/index.d.ts",
+  "files": ["build"],
+  "exports": {
+    ".": {
+      "types": "./build/ts/src/index.d.ts",
+      "import": "./build/utils.esm.js",
+      "require": "./build/utils.min.js"
+    },
+    "./*": "./*"
+  },
   "license": "MIT",
   "author": "Triply <info@triply.cc>",
   "homepage": "https://github.com/zazuko/Yasgui",

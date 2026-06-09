@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es6",
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "strict": true,
     "allowSyntheticDefaultImports": true,
     "noUnusedLocals": true,
@@ -12,7 +12,6 @@
     "listFiles": false,
     "outDir": "./build/ts",
     "rootDir": ".",
-    "baseUrl": ".",
     "paths": {
       "@zazuko/yasgui": ["./packages/yasgui/src"],
       "@zazuko/yasgui-utils": ["./packages/utils/src"],
@@ -20,8 +19,8 @@
       "@zazuko/yasr": ["./packages/yasr/src"]
     }
   },
-  "files": ["./packages/yasgui/typings-custom/main.d.ts"],
-  "include": ["./packages/*/src/**/**/*", "./webpack/**/*", "./test/*", "./packages/yasqe/grammar/tokenizer.ts"],
+  "files": ["./packages/yasgui/typings-custom/main.d.ts", "./vite-env.d.ts"],
+  "include": ["./packages/*/src/**/**/*", "./test/*", "./packages/yasqe/grammar/tokenizer.ts"],
   "compileOnSave": false,
   "exclude": ["**/build/**"]
 }

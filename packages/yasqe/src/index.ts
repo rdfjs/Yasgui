@@ -1,5 +1,5 @@
-require("./scss/yasqe.scss");
-require("./scss/buttons.scss");
+import "./scss/yasqe.scss";
+import "./scss/buttons.scss";
 import { findFirstPrefixLine } from "./prefixFold";
 import { getPrefixesFromQuery, addPrefixes, removePrefixes, Prefixes } from "./prefixUtils";
 import { getPreviousNonWsToken, getNextNonWsToken, getCompleteToken } from "./tokenUtils";
@@ -226,7 +226,7 @@ export class Yasqe extends CodeMirror {
               popup = undefined;
             }
           },
-          true
+          true,
         );
         var input = document.createElement("input");
         input.type = "text";
@@ -278,7 +278,7 @@ export class Yasqe extends CodeMirror {
                 }
                 errSpan.textContent = textContent;
                 input.replaceWith(errSpan);
-              }
+              },
             );
           };
         }
@@ -458,7 +458,7 @@ export class Yasqe extends CodeMirror {
     //on caveat: this function won't work when query is invalid (i.e. when typing)
     const token: Token = this.getTokenAt(
       { line: this.getDoc().lastLine(), ch: this.getDoc().getLine(this.getDoc().lastLine()).length },
-      true
+      true,
     );
     const vars: string[] = [];
     for (var v in token.state.variables) {
@@ -561,7 +561,7 @@ export class Yasqe extends CodeMirror {
           {
             line: i,
             ch: 1,
-          }
+          },
         );
       } else {
         // Not all lines are commented, so add comments
@@ -646,7 +646,7 @@ export class Yasqe extends CodeMirror {
           //start injecting
           newQuery += "\n" + injectString;
         }
-      }
+      },
     );
     return newQuery;
   }
@@ -685,7 +685,7 @@ export class Yasqe extends CodeMirror {
           line: l,
           ch: this.getDoc().getLine(l).length,
         },
-        precise
+        precise,
       );
       var state = token.state;
       this.setOption("queryType", state.queryType);
@@ -911,7 +911,7 @@ export class Yasqe extends CodeMirror {
   static forkAutocompleter(
     fromCompleter: string,
     newCompleter: { name: string } & Partial<Autocompleter.CompleterConfig>,
-    enable = true
+    enable = true,
   ) {
     if (!Yasqe.Autocompleters[fromCompleter]) throw new Error("Autocompleter " + fromCompleter + " does not exist");
     if (!newCompleter?.name) {
@@ -975,7 +975,7 @@ export interface HintConfig {
         moveFocus: (movement: number) => void;
         pick: () => void;
         setFocus: (index: number) => void;
-      }
+      },
     ) => void;
   };
 }

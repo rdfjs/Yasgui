@@ -6,13 +6,14 @@
   ],
   "scripts": {
     "prepare": "husky",
-    "build": "better-npm-run build",
-    "dev": "better-npm-run dev",
-    "util:lint": "ESLINT_STRICT=true eslint --ext .tsx --ext .ts $(ls -d ./packages/*/* | grep -E '(src|test|grammar)$')",
-    "util:buildWebpackConfig": "tsc -p tsconfig-webpack.json",
-    "util:validateTs": "tsc -p ./tsconfig-validate.json --noEmit",
+    "dev": "vite",
+    "preview": "vite preview --port 4000",
+    "build": "rimraf ./build && npm run build:demo && npm run build:lib",
+    "build:demo": "NODE_ENV=production vite build",
+    "build:lib": "for p in utils yasqe yasr yasgui; do BUILD_PACKAGE=$p NODE_ENV=production vite build || exit 1; done",
+    "util:lint": "ESLINT_STRICT=true eslint \"packages/*/{src,test,grammar}/**/*.{ts,tsx}\"",
+    "util:validateTs": "tsc -p ./tsconfig.json --noEmit",
     "util:prettify": "prettier --parser typescript --write $(find ./packages/*/src -regex '.*\\.tsx?$') && prettier --parser css --write $(find ./packages/*/src -regex '.*\\.?scss$')",
-    "util:analyzeBundle": "ANALYZE_BUNDLE=true npm run build",
     "pretest": "[ -z \"$(ls -A ./build 2> /dev/null)\" ] && echo Run \\\"npm run build\\\" before running a test && exit 1 || true",
     "test:dev": "TEST_ON_DEV_BUILD=1 npm run test",
     "test": "npm run puppeteer-test && npm run unit-test",
@@ -22,84 +23,43 @@
     "prerelease": "npm run build && npm run test",
     "release": "changeset publish"
   },
-  "betterScripts": {
-    "dev": {
-      "command": "npm run util:buildWebpackConfig && webpack-dev-server --host 0.0.0.0 --port 4000 --config ./webpack/config.js",
-      "env": {
-        "NODE_ENV": "development"
-      }
-    },
-    "build": {
-      "command": "rm -rf ./build && npm run util:buildWebpackConfig && webpack --config ./webpack/config.js && ./webpack/distributeBuildFiles.sh",
-      "env": {
-        "NODE_ENV": "production"
-      }
-    }
-  },
   "lint-staged": {
     "*.ts?(x)": [
-      "prettier --parser typescript --write",
+      "prettier --write",
       "eslint"
     ],
-    "*.js": [
+    "*.{js, css, scss}": [
       "prettier --write"
-    ],
-    "*.css": [
-      "prettier --parser css --write"
-    ],
-    "*.scss": [
-      "prettier --parser scss --write"
     ]
   },
-  "dependencies": {
-    "@typescript-eslint/eslint-plugin": "^6.13.2",
-    "@typescript-eslint/parser": "^6.13.2",
-    "autoprefixer": "^10.4.21",
-    "babel-loader": "^10.0.0",
-    "better-npm-run": "^0.1.1",
-    "chai": "^6.2.0",
-    "css-loader": "^7.1.2",
-    "fs-extra": "^11.3.2",
-    "html-webpack-plugin": "^5.6.4",
-    "mini-css-extract-plugin": "^2.9.4",
-    "mocha": "^11.7.4",
-    "node-static": "^0.7.11"
-  },
   "devDependencies": {
-    "@babel/core": "^7.23.5",
-    "@babel/plugin-transform-runtime": "^7.23.4",
-    "@babel/preset-env": "^7.23.5",
-    "@babel/runtime": "^7.23.5",
     "@changesets/cli": "^2.29.7",
     "@types/chai": "^5.2.3",
     "@types/fs-extra": "^11.0.4",
     "@types/mocha": "^10.0.10",
     "@types/node-static": "^0.7.12",
-    "@types/webpack-bundle-analyzer": "^4.7.0",
-    "copy-webpack-plugin": "^13.0.1",
-    "css-minimizer-webpack-plugin": "^5.0.0",
-    "eslint": "^8.55.0",
-    "eslint-config-prettier": "^6.10.0",
-    "eslint-plugin-jest": "^23.8.1",
-    "eslint-plugin-lodash": "^7.1.0",
+    "autoprefixer": "^10.4.21",
+    "chai": "^6.2.0",
+    "eslint": "^10.4.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jest": "^29.15.2",
+    "eslint-plugin-lodash": "^8.0.0",
+    "fs-extra": "^11.3.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.6",
-    "postcss-loader": "^8.2.0",
+    "mocha": "^11.7.4",
+    "node-static": "^0.7.11",
     "prettier": "^3.6.2",
-    "puppeteer": "^24.28.0",
+    "puppeteer": "^25.1.0",
+    "rimraf": "^6.1.3",
     "sass": "^1.93.3",
-    "sass-loader": "^16.0.6",
-    "source-map": "^0.7.6",
-    "source-map-loader": "^5.0.0",
     "source-map-support": "^0.5.21",
-    "style-loader": "^1.1.3",
-    "terser-webpack-plugin": "^3.0.7",
-    "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",
-    "webpack": "^5.102.1",
-    "webpack-bundle-analyzer": "^4.10.2",
-    "webpack-cli": "^6.0.1",
-    "webpack-dev-server": "^5.2.2",
-    "webpack-livereload-plugin": "^3.0.2"
+    "typescript-eslint": "^8.60.1",
+    "vite": "^8.0.16",
+    "vite-plugin-dts": "^5.0.2"
+  },
+  "prettier": {
+    "printWidth": 120
   }
 }

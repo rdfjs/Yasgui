@@ -1,6 +1,6 @@
 //Do not want to import this using typescript. Somehow, we get a tangled mess when transpiling to es6 with ts,
 //and applying babel.
-import {
+import CodeMirrorLib, {
   Editor as CmEditor,
   Doc as CmDoc,
   Token as CmToken,
@@ -8,24 +8,24 @@ import {
   EditorConfiguration as CmEditorConfiguration,
 } from "codemirror";
 
-const _CodeMirror = require("codemirror");
+const _CodeMirror: any = CodeMirrorLib;
 
 import * as sparql11Mode from "../grammar/tokenizer";
 import { default as prefixFold } from "./prefixFold";
 import { TokenizerState } from "./index";
 
-require("codemirror/addon/fold/foldcode.js");
-require("codemirror/addon/fold/foldgutter.js");
-require("codemirror/addon/fold/xml-fold.js");
-require("codemirror/addon/fold/brace-fold.js");
-require("codemirror/addon/hint/show-hint.js");
-require("codemirror/addon/search/searchcursor.js");
-require("codemirror/addon/search/match-highlighter.js");
-require("codemirror/addon/edit/matchbrackets.js");
-require("codemirror/addon/runmode/runmode.js");
-require("codemirror/lib/codemirror.css");
-require("codemirror/addon/fold/foldgutter.css");
-require("./scss/codemirrorMods.scss");
+import "codemirror/addon/fold/foldcode.js";
+import "codemirror/addon/fold/foldgutter.js";
+import "codemirror/addon/fold/xml-fold.js";
+import "codemirror/addon/fold/brace-fold.js";
+import "codemirror/addon/hint/show-hint.js";
+import "codemirror/addon/search/searchcursor.js";
+import "codemirror/addon/search/match-highlighter.js";
+import "codemirror/addon/edit/matchbrackets.js";
+import "codemirror/addon/runmode/runmode.js";
+import "codemirror/lib/codemirror.css";
+import "codemirror/addon/fold/foldgutter.css";
+import "./scss/codemirrorMods.scss";
 
 _CodeMirror.registerHelper("fold", "prefix", prefixFold);
 _CodeMirror.defineMode("sparql11", sparql11Mode.default);
@@ -38,7 +38,7 @@ namespace CodeMirror {
     state: sparql11Mode.State;
   }
 }
-interface CodeMirror extends Omit<CmEditor, "getOption" | "setOption" | "on" | "off"> {
+interface CodeMirror extends Omit<CmEditor, "getOption" | "setOption" | "on" | "off" | "showHint"> {
   /**
    * Added some more specific typings for `getOption`
    * For some functions (called from keyboard combinations like ctrl-enter) we cannot use member props of our object
