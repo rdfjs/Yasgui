@@ -1,11 +1,13 @@
 {
   "name": "@zazuko/yasqe",
   "description": "Yet Another SPARQL Query Editor",
-  "version": "4.6.1",
+  "version": "4.6.2",
   "main": "build/yasqe.min.js",
   "module": "build/yasqe.esm.js",
   "types": "build/ts/src/index.d.ts",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "exports": {
     ".": {
       "types": "./build/ts/src/index.d.ts",
@@ -34,7 +36,7 @@
     "directory": "packages/yasqe"
   },
   "dependencies": {
-    "@zazuko/yasgui-utils": "^4.6.1",
+    "@zazuko/yasgui-utils": "^4.6.2",
     "codemirror": "^5.51.0",
     "lodash-es": "^4.18.1",
     "query-string": "^6.10.1"
