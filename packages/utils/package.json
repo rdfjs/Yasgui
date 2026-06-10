@@ -1,11 +1,13 @@
 {
   "name": "@zazuko/yasgui-utils",
-  "version": "4.6.1",
+  "version": "4.6.2",
   "description": "Utils for YASGUI libs",
   "main": "build/utils.min.js",
   "module": "build/utils.esm.js",
   "types": "build/ts/src/index.d.ts",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "exports": {
     ".": {
       "types": "./build/ts/src/index.d.ts",
