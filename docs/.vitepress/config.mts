@@ -17,10 +17,10 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     logo: "/yasgui.png",
-    nav: [
-      { text: "Demo", link: "/" },
-      { text: "API", link: "/docs/api" },
-    ],
+    // nav: [
+    //   { text: "Demo", link: "/" },
+    //   { text: "API", link: "/docs/api" },
+    // ],
     sidebar: {
       "/docs/": [
         {
@@ -42,6 +42,7 @@ export default defineConfig({
           text: "Configuration",
           items: [
             { text: "Language server", link: "/docs/language-server" },
+            { text: "Result plugins", link: "/docs/plugins" },
             { text: "Request configuration", link: "/docs/request-config" },
             { text: "Theming", link: "/docs/theming" },
             { text: "Monaco editor options", link: "/docs/editor-options" },
