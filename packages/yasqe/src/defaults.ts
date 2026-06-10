@@ -122,7 +122,7 @@ SELECT * WHERE {
   };
   const requestConfig: PlainRequestConfig = {
     queryArgument: undefined, //undefined means: get query argument based on query mode
-    endpoint: "https://dbpedia.org/sparql",
+    endpoint: "https://sparql.dblp.org/sparql",
     method: "POST",
     acceptHeaderGraph: "text/turtle,application/n-triples,application/rdf+xml,application/trig,application/n-quads",
     acceptHeaderSelect: "application/sparql-results+json,*/*;q=0.9",

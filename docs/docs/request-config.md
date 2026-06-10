@@ -8,7 +8,7 @@ Every field may be a value **or** a `(yasqe) => value` function, so you can comp
 ```ts
 new Yasgui(el, {
   requestConfig: {
-    endpoint: "https://dbpedia.org/sparql",
+    endpoint: "https://sparql.dblp.org/sparql",
     method: "POST",
     headers: () => ({ Authorization: `Bearer ${getToken()}` }),
     withCredentials: false,

@@ -274,7 +274,7 @@ export async function configureQlueLsBackend(languageClient: any, endpoint: stri
 // Shared code for the demo pages
 
 /** Default SPARQL endpoint used across the demo pages. */
-export const DEMO_ENDPOINT = "https://dbpedia.org/sparql";
+export const DEMO_ENDPOINT = "https://sparql.dblp.org/sparql";
 
 export type DevTheme = "light" | "dark";
 

@@ -10,10 +10,10 @@ import { createQlueLsWorker, configureQlueLsBackend } from "./qlue-ls";
 
 const yasqe = new Yasqe(document.getElementById("yasqe")!, {
   value: "SELECT * WHERE { ?s ?p ?o } LIMIT 10",
-  requestConfig: { endpoint: "https://dbpedia.org/sparql" },
+  requestConfig: { endpoint: "https://sparql.dblp.org/sparql" },
   languageServerWorker: createQlueLsWorker,
   onLanguageClientReady: (languageClient) =>
-    configureQlueLsBackend(languageClient, "https://dbpedia.org/sparql"),
+    configureQlueLsBackend(languageClient, "https://sparql.dblp.org/sparql"),
 });
 
 yasqe.on("query", (yasqe, req) => console.log("running", req));

@@ -7,15 +7,13 @@ import * as chai from "chai";
 import { it, describe, before, beforeEach, after, afterEach } from "mocha";
 const expect = chai.expect;
 import Yasqe from "@zazuko/yasqe";
-//@ts-ignore ignore unused warning
-import { setup, destroy, closePage, getPage, makeScreenshot, inspectLive, wait } from "./utils";
+import { setup, destroy, closePage, getPage, wait } from "./utils";
 
 declare var window: Window & {
   Yasqe: typeof Yasqe;
   // TODO: typed as `any` until these tests are rewritten for the Monaco/qlue-ls API.
-  // The skipped suites below still call the removed CodeMirror API (getDoc, autoformat,
-  // getCompleteToken, autocompleters); `any` keeps them compiling until then.
-  yasqe: any;
+  yasqe: Yasqe;
+  // yasqe: any;
 };
 
 describe("Yasqe", function () {
@@ -61,27 +59,27 @@ describe("Yasqe", function () {
     expect(value).to.contain("SELECT");
   });
 
-  async function waitForAutocompletionPopup(shouldNotHaveLength?: number): Promise<number | undefined> {
-    if (shouldNotHaveLength !== undefined) {
-      await page.waitForFunction(
-        (n: number) => document.querySelectorAll(".suggest-widget.visible .monaco-list-row").length !== n,
-        { timeout: 2000 },
-        shouldNotHaveLength,
-      );
-    } else {
-      await page.waitForFunction(() => document.querySelector(".suggest-widget")?.classList.contains("visible"), {
-        timeout: 2000,
-      });
-      await wait(50);
-    }
-    return page.evaluate(() => document.querySelectorAll(".suggest-widget.visible .monaco-list-row").length);
-  }
+  // async function waitForAutocompletionPopup(shouldNotHaveLength?: number): Promise<number | undefined> {
+  //   if (shouldNotHaveLength !== undefined) {
+  //     await page.waitForFunction(
+  //       (n: number) => document.querySelectorAll(".suggest-widget.visible .monaco-list-row").length !== n,
+  //       { timeout: 2000 },
+  //       shouldNotHaveLength,
+  //     );
+  //   } else {
+  //     await page.waitForFunction(() => document.querySelector(".suggest-widget")?.classList.contains("visible"), {
+  //       timeout: 2000,
+  //     });
+  //     await wait(50);
+  //   }
+  //   return page.evaluate(() => document.querySelectorAll(".suggest-widget.visible .monaco-list-row").length);
+  // }
 
-  async function issueAutocompletionKeyCombination() {
-    await page.keyboard.down("Control");
-    await page.keyboard.press("Space");
-    await page.keyboard.up("Control");
-  }
+  // async function issueAutocompletionKeyCombination() {
+  //   await page.keyboard.down("Control");
+  //   await page.keyboard.press("Space");
+  //   await page.keyboard.up("Control");
+  // }
 
   // Autoformatting via LSP document-format action (qlue-ls provides textDocument/formatting).
   describe("Autoformatting", function () {
@@ -153,521 +151,522 @@ describe("Yasqe", function () {
         { polling: 10, timeout: 5000 },
       );
     });
-    // TODO: rewrite for qlue-ls - the old test relied on a custom test autocompleter that knew about
-    // "testa: <https://test.a.com/>". qlue-ls does not have this prefix built-in. To restore this
-    // test, configure a qlue-ls backend with test data that includes testa: completions.
-    it.skip("should show prefix completions after adding new prefix", async () => {
-      await page.evaluate(() => {
-        const query = `# prefix #\nPREFIX geo: <http://www.opengis.net/ont/geosparql#> select\n* where { ?sub `;
-        window.yasqe.setValue(query);
-        window.yasqe.focus();
-        const m = window.yasqe.editor.getModel();
-        const lastLine = m.getLineCount();
-        window.yasqe.editor.setPosition({ lineNumber: lastLine, column: m.getLineMaxColumn(lastLine) });
-      });
-      await type("testa:");
-      await page.waitForFunction(() => window.yasqe.getValue().indexOf("PREFIX testa: <https://test.a.com/>") >= 0, {
-        polling: 10,
-      });
-      await waitForAutocompletionPopup();
-    });
-    // TODO: rewrite for qlue-ls - path-traversal completion used the old custom testa: autocompleter.
-    // Needs a configured backend with testa: term data to work.
-    it.skip("path traversal should change the correct segment", async () => {
-      const query = "PREFIX testa: <https://test.a.com/> select * where { ?s testa:someprop/testa:/testa:someotherprop";
-      await page.evaluate((q: string) => {
-        window.yasqe.setValue(q);
-        window.yasqe.focus();
-        window.yasqe.editor.setPosition({ lineNumber: 1, column: q.indexOf(":/testa:someotherprop") + 1 });
-      }, query);
-      await issueAutocompletionKeyCombination();
-      await waitForAutocompletionPopup();
-      await page.keyboard.press("Enter");
-      const newValue = await page.evaluate(() => window.yasqe.getValue());
-      expect(newValue).to.equal(
-        "PREFIX testa: <https://test.a.com/> select * where { ?s testa:someprop/testa:0/testa:someotherprop",
-      );
-    });
-    // TODO: rewrite for qlue-ls - same as above, needs testa: backend data.
-    it.skip("path traversal should search with the correct path segment", async () => {
-      const query = "PREFIX testa: <https://test.a.com/> select * where { ?s testa:someprop/testa:someotherprop/testa;";
-      await page.evaluate((q: string) => {
-        window.yasqe.setValue(q);
-        window.yasqe.focus();
-        window.yasqe.editor.setPosition({ lineNumber: 1, column: q.indexOf(";") + 1 });
-      }, query);
-      await issueAutocompletionKeyCombination();
-      try {
-        const hasAutocomplete = await waitForAutocompletionPopup();
-        expect(hasAutocomplete).to.be.undefined("", "Expected no suggestion popup here");
-      } catch (e) {
-        if ((e as any).name !== "TimeoutError") throw e;
-      }
-    });
+    // // TODO: rewrite for qlue-ls - the old test relied on a custom test autocompleter that knew about
+    // // "testa: <https://test.a.com/>". qlue-ls does not have this prefix built-in. To restore this
+    // // test, configure a qlue-ls backend with test data that includes testa: completions.
+    // it.skip("should show prefix completions after adding new prefix", async () => {
+    //   await page.evaluate(() => {
+    //     const query = `# prefix #\nPREFIX geo: <http://www.opengis.net/ont/geosparql#> select\n* where { ?sub `;
+    //     window.yasqe.setValue(query);
+    //     window.yasqe.focus();
+    //     const m = window.yasqe.editor.getModel();
+    //     const lastLine = m.getLineCount();
+    //     window.yasqe.editor.setPosition({ lineNumber: lastLine, column: m.getLineMaxColumn(lastLine) });
+    //   });
+    //   await type("testa:");
+    //   await page.waitForFunction(() => window.yasqe.getValue().indexOf("PREFIX testa: <https://test.a.com/>") >= 0, {
+    //     polling: 10,
+    //   });
+    //   await waitForAutocompletionPopup();
+    // });
+    // // TODO: rewrite for qlue-ls - path-traversal completion used the old custom testa: autocompleter.
+    // // Needs a configured backend with testa: term data to work.
+    // it.skip("path traversal should change the correct segment", async () => {
+    //   const query = "PREFIX testa: <https://test.a.com/> select * where { ?s testa:someprop/testa:/testa:someotherprop";
+    //   await page.evaluate((q: string) => {
+    //     window.yasqe.setValue(q);
+    //     window.yasqe.focus();
+    //     window.yasqe.editor.setPosition({ lineNumber: 1, column: q.indexOf(":/testa:someotherprop") + 1 });
+    //   }, query);
+    //   await issueAutocompletionKeyCombination();
+    //   await waitForAutocompletionPopup();
+    //   await page.keyboard.press("Enter");
+    //   const newValue = await page.evaluate(() => window.yasqe.getValue());
+    //   expect(newValue).to.equal(
+    //     "PREFIX testa: <https://test.a.com/> select * where { ?s testa:someprop/testa:0/testa:someotherprop",
+    //   );
+    // });
+    // // TODO: rewrite for qlue-ls - same as above, needs testa: backend data.
+    // it.skip("path traversal should search with the correct path segment", async () => {
+    //   const query = "PREFIX testa: <https://test.a.com/> select * where { ?s testa:someprop/testa:someotherprop/testa;";
+    //   await page.evaluate((q: string) => {
+    //     window.yasqe.setValue(q);
+    //     window.yasqe.focus();
+    //     window.yasqe.editor.setPosition({ lineNumber: 1, column: q.indexOf(";") + 1 });
+    //   }, query);
+    //   await issueAutocompletionKeyCombination();
+    //   try {
+    //     const hasAutocomplete = await waitForAutocompletionPopup();
+    //     expect(hasAutocomplete).to.be.undefined("", "Expected no suggestion popup here");
+    //   } catch (e) {
+    //     if ((e as any).name !== "TimeoutError") throw e;
+    //   }
+    // });
   });
-  // Autocompleting: Monaco uses the LSP suggest widget (.suggest-widget) instead of .CodeMirror-hints.
-  // Cursor positioning uses editor.setPosition({ lineNumber, column }) (1-indexed, unlike CodeMirror's 0-indexed lines).
-  // Tests that relied on CodeMirror-internal APIs (getCompleteToken, autocompleters) or on the old LOV/custom
-  // test autocomplete data are kept as it.skip with a TODO explaining what is needed to restore them.
-  describe.skip("Autocompleting", function () {
-    const getCompleteToken = () => {
-      return page.evaluate(() => window.yasqe.getCompleteToken());
-    };
-    const getCompleteTokenAt = (character: number, line?: number) => {
-      return page.evaluate(
-        (at: { character: number; line?: number }) => {
-          window.yasqe.getDoc().setCursor({ line: at.line || window.yasqe.getCursor().line, ch: at.character });
-          return window.yasqe.getCompleteToken();
-        },
-        { character: character, line: line },
-      );
-    };
-    it("Should only trigger get request when needed", async () => {
-      // Setting up
-      await page.evaluate(() => {
-        const query = `PREFIX testa: <https://test.a.com/> select * where {?x a <htt`;
-        (window as any).showCount = 0;
-        (window as any).hideCount = 0;
-        window.yasqe.setValue(query);
-        window.yasqe.on("autocompletionShown", () => (window as any).showCount++);
-        window.yasqe.on("autocompletionClose", () => (window as any).hideCount++);
-        window.yasqe.focus();
-        window.yasqe.getDoc().setCursor({ line: 0, ch: query.length });
-        return window.yasqe.getDoc().getCursor();
-      });
-      const getHideCount = () =>
-        page.evaluate(() => {
-          return <number>(window as any).hideCount;
-        });
-      const getShowCount = () =>
-        page.evaluate(() => {
-          return <number>(window as any).showCount;
-        });
-      await issueAutocompletionKeyCombination();
-      await waitForAutocompletionPopup();
-      expect(await getShowCount()).to.equal(1);
-      expect(await getHideCount()).to.equal(0);
-      await type("ps://");
-      await wait(200);
-      expect(await getShowCount()).to.be.lessThan(7);
-      expect(await getHideCount()).to.equal(0);
-    }).timeout(5000);
-    it("Should show the same results irregardless of where the cursor is", async () => {
-      await page.evaluate(() => {
-        const query = `select * where { ?s <https://test.a.com/55`;
-        window.yasqe.setValue(query);
-        window.yasqe.focus();
-        window.yasqe.getDoc().setCursor({ line: 0, ch: query.length });
-        return window.yasqe.getDoc().getCursor();
-      });
-      await issueAutocompletionKeyCombination();
-      expect(await waitForAutocompletionPopup()).to.equal(11);
-      await page.keyboard.press("Escape");
-      await page.evaluate(() => {
-        const query = `select * where { ?s <https://test.a.com/55`;
-        window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf("/test.a") });
-      });
-      await issueAutocompletionKeyCombination();
-      expect(await waitForAutocompletionPopup()).to.equal(11);
-      await page.keyboard.press("Escape");
-      await page.evaluate(() => {
-        const query = `select * where { ?s <https://test.a.com/55`;
-        window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf("/55") });
-      });
-      await issueAutocompletionKeyCombination();
-      expect(await waitForAutocompletionPopup()).to.equal(11);
 
-      await page.keyboard.press("Escape");
-      await page.evaluate(() => {
-        const query = `select * where { ?s <https://test.a.com/55`;
-        window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf("http") });
-      });
-      await issueAutocompletionKeyCombination();
-      expect(await waitForAutocompletionPopup()).to.equal(11);
-    });
-    it("Should work without trailing whitespace", async () => {
-      await page.evaluate(() => {
-        const query = "select * where { ?subject ?predicate ?s}";
-        window.yasqe.setValue(query);
-        window.yasqe.focus();
-        window.yasqe.getDoc().setCursor({ line: 0, ch: query.length - 2 });
-        return window.yasqe.getDoc().getCursor();
-      });
-      await issueAutocompletionKeyCombination();
-      await waitForAutocompletionPopup();
+  // // Autocompleting: Monaco uses the LSP suggest widget (.suggest-widget) instead of .CodeMirror-hints.
+  // // Cursor positioning uses editor.setPosition({ lineNumber, column }) (1-indexed, unlike CodeMirror's 0-indexed lines).
+  // // Tests that relied on CodeMirror-internal APIs (getCompleteToken, autocompleters) or on the old LOV/custom
+  // // test autocomplete data are kept as it.skip with a TODO explaining what is needed to restore them.
+  // describe.skip("Autocompleting", function () {
+  //   const getCompleteToken = () => {
+  //     return page.evaluate(() => window.yasqe.getCompleteToken());
+  //   };
+  //   const getCompleteTokenAt = (character: number, line?: number) => {
+  //     return page.evaluate(
+  //       (at: { character: number; line?: number }) => {
+  //         window.yasqe.getDoc().setCursor({ line: at.line || window.yasqe.getCursor().line, ch: at.character });
+  //         return window.yasqe.getCompleteToken();
+  //       },
+  //       { character: character, line: line },
+  //     );
+  //   };
+  //   it("Should only trigger get request when needed", async () => {
+  //     // Setting up
+  //     await page.evaluate(() => {
+  //       const query = `PREFIX testa: <https://test.a.com/> select * where {?x a <htt`;
+  //       (window as any).showCount = 0;
+  //       (window as any).hideCount = 0;
+  //       window.yasqe.setValue(query);
+  //       window.yasqe.on("autocompletionShown", () => (window as any).showCount++);
+  //       window.yasqe.on("autocompletionClose", () => (window as any).hideCount++);
+  //       window.yasqe.focus();
+  //       window.yasqe.getDoc().setCursor({ line: 0, ch: query.length });
+  //       return window.yasqe.getDoc().getCursor();
+  //     });
+  //     const getHideCount = () =>
+  //       page.evaluate(() => {
+  //         return <number>(window as any).hideCount;
+  //       });
+  //     const getShowCount = () =>
+  //       page.evaluate(() => {
+  //         return <number>(window as any).showCount;
+  //       });
+  //     await issueAutocompletionKeyCombination();
+  //     await waitForAutocompletionPopup();
+  //     expect(await getShowCount()).to.equal(1);
+  //     expect(await getHideCount()).to.equal(0);
+  //     await type("ps://");
+  //     await wait(200);
+  //     expect(await getShowCount()).to.be.lessThan(7);
+  //     expect(await getHideCount()).to.equal(0);
+  //   }).timeout(5000);
+  //   it("Should show the same results irregardless of where the cursor is", async () => {
+  //     await page.evaluate(() => {
+  //       const query = `select * where { ?s <https://test.a.com/55`;
+  //       window.yasqe.setValue(query);
+  //       window.yasqe.focus();
+  //       window.yasqe.getDoc().setCursor({ line: 0, ch: query.length });
+  //       return window.yasqe.getDoc().getCursor();
+  //     });
+  //     await issueAutocompletionKeyCombination();
+  //     expect(await waitForAutocompletionPopup()).to.equal(11);
+  //     await page.keyboard.press("Escape");
+  //     await page.evaluate(() => {
+  //       const query = `select * where { ?s <https://test.a.com/55`;
+  //       window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf("/test.a") });
+  //     });
+  //     await issueAutocompletionKeyCombination();
+  //     expect(await waitForAutocompletionPopup()).to.equal(11);
+  //     await page.keyboard.press("Escape");
+  //     await page.evaluate(() => {
+  //       const query = `select * where { ?s <https://test.a.com/55`;
+  //       window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf("/55") });
+  //     });
+  //     await issueAutocompletionKeyCombination();
+  //     expect(await waitForAutocompletionPopup()).to.equal(11);
 
-      await page.keyboard.press("Enter");
-      const newValue = await page.evaluate(() => window.yasqe.getValue());
-      expect(newValue).to.equal("select * where { ?subject ?predicate ?subject}");
-    });
+  //     await page.keyboard.press("Escape");
+  //     await page.evaluate(() => {
+  //       const query = `select * where { ?s <https://test.a.com/55`;
+  //       window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf("http") });
+  //     });
+  //     await issueAutocompletionKeyCombination();
+  //     expect(await waitForAutocompletionPopup()).to.equal(11);
+  //   });
+  //   it("Should work without trailing whitespace", async () => {
+  //     await page.evaluate(() => {
+  //       const query = "select * where { ?subject ?predicate ?s}";
+  //       window.yasqe.setValue(query);
+  //       window.yasqe.focus();
+  //       window.yasqe.getDoc().setCursor({ line: 0, ch: query.length - 2 });
+  //       return window.yasqe.getDoc().getCursor();
+  //     });
+  //     await issueAutocompletionKeyCombination();
+  //     await waitForAutocompletionPopup();
 
-    it("Should scope to only one part of a path expression", async () => {
-      const oneLineQuery = "PREFIX testa: <https://test.a.com/> select * where { ?subject testa:/testa:2/testa:3";
+  //     await page.keyboard.press("Enter");
+  //     const newValue = await page.evaluate(() => window.yasqe.getValue());
+  //     expect(newValue).to.equal("select * where { ?subject ?predicate ?subject}");
+  //   });
 
-      await page.evaluate(() => {
-        const oneLineQuery = "PREFIX testa: <https://test.a.com/> select * where { ?subject testa:/testa:2/testa:3";
-        window.yasqe.setValue(oneLineQuery);
-        window.yasqe.focus();
-        window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.length - 1 });
-      });
-      let token = await getCompleteToken();
-      expect(token.string).to.equal("testa:3");
-      token = await getCompleteTokenAt(oneLineQuery.length - 8);
-      expect(token.string).to.equal("testa:2");
-      token = await getCompleteTokenAt(oneLineQuery.length - 16);
-      expect(token.string).to.equal("testa:");
+  //   it("Should scope to only one part of a path expression", async () => {
+  //     const oneLineQuery = "PREFIX testa: <https://test.a.com/> select * where { ?subject testa:/testa:2/testa:3";
 
-      //token is now in beginning of property path
-      await issueAutocompletionKeyCombination();
-      await waitForAutocompletionPopup();
+  //     await page.evaluate(() => {
+  //       const oneLineQuery = "PREFIX testa: <https://test.a.com/> select * where { ?subject testa:/testa:2/testa:3";
+  //       window.yasqe.setValue(oneLineQuery);
+  //       window.yasqe.focus();
+  //       window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.length - 1 });
+  //     });
+  //     let token = await getCompleteToken();
+  //     expect(token.string).to.equal("testa:3");
+  //     token = await getCompleteTokenAt(oneLineQuery.length - 8);
+  //     expect(token.string).to.equal("testa:2");
+  //     token = await getCompleteTokenAt(oneLineQuery.length - 16);
+  //     expect(token.string).to.equal("testa:");
 
-      await page.keyboard.press("Enter");
-      const newValue = await page.evaluate(() => window.yasqe.getValue());
-      expect(newValue).to.equal(
-        "PREFIX testa: <https://test.a.com/> select * where { ?subject testa:0/testa:2/testa:3",
-      );
-    });
+  //     //token is now in beginning of property path
+  //     await issueAutocompletionKeyCombination();
+  //     await waitForAutocompletionPopup();
 
-    it("Should deal with infinished full iri", async () => {
-      await page.evaluate(() => {
-        const oneLineQuery = "select * where { ?subject <http://www.opengis.net/ont/geosparql# ?s";
-        window.yasqe.setValue(oneLineQuery);
-        window.yasqe.focus();
-        window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.length - 5 });
-      });
+  //     await page.keyboard.press("Enter");
+  //     const newValue = await page.evaluate(() => window.yasqe.getValue());
+  //     expect(newValue).to.equal(
+  //       "PREFIX testa: <https://test.a.com/> select * where { ?subject testa:0/testa:2/testa:3",
+  //     );
+  //   });
 
-      await issueAutocompletionKeyCombination();
-      await waitForAutocompletionPopup();
+  //   it("Should deal with infinished full iri", async () => {
+  //     await page.evaluate(() => {
+  //       const oneLineQuery = "select * where { ?subject <http://www.opengis.net/ont/geosparql# ?s";
+  //       window.yasqe.setValue(oneLineQuery);
+  //       window.yasqe.focus();
+  //       window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.length - 5 });
+  //     });
 
-      await page.keyboard.press("Enter");
-      const newValue = await page.evaluate(() => window.yasqe.getValue());
-      expect(newValue).to.equal("select * where { ?subject <http://www.opengis.net/ont/geosparql#defaultGeometry> ?s");
-    });
+  //     await issueAutocompletionKeyCombination();
+  //     await waitForAutocompletionPopup();
 
-    it("Should autocomplete from middle of unfinished iri", async () => {
-      await page.evaluate(() => {
-        const oneLineQuery = "select * where { ?subject <http://www.opengis.net/ont/geosparql#";
-        window.yasqe.setValue(oneLineQuery);
-        window.yasqe.focus();
-        window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf("opengis") });
-      });
+  //     await page.keyboard.press("Enter");
+  //     const newValue = await page.evaluate(() => window.yasqe.getValue());
+  //     expect(newValue).to.equal("select * where { ?subject <http://www.opengis.net/ont/geosparql#defaultGeometry> ?s");
+  //   });
 
-      await issueAutocompletionKeyCombination();
-      await waitForAutocompletionPopup();
+  //   it("Should autocomplete from middle of unfinished iri", async () => {
+  //     await page.evaluate(() => {
+  //       const oneLineQuery = "select * where { ?subject <http://www.opengis.net/ont/geosparql#";
+  //       window.yasqe.setValue(oneLineQuery);
+  //       window.yasqe.focus();
+  //       window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf("opengis") });
+  //     });
 
-      await page.keyboard.press("Enter");
-      const newValue = await page.evaluate(() => window.yasqe.getValue());
-      expect(newValue).to.equal("select * where { ?subject <http://www.opengis.net/ont/geosparql#defaultGeometry>");
+  //     await issueAutocompletionKeyCombination();
+  //     await waitForAutocompletionPopup();
 
-      await page.evaluate(() => {
-        const oneLineQuery = "select * where { ?subject <http://www.opengis.net/ont/geosparql#";
-        window.yasqe.setValue(oneLineQuery);
-        window.yasqe.focus();
-        window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf("opengis") });
-      });
-      const token = await getCompleteToken();
-      expect(token.string).to.equal("<http://www.opengis.net/ont/geosparql#");
-    });
+  //     await page.keyboard.press("Enter");
+  //     const newValue = await page.evaluate(() => window.yasqe.getValue());
+  //     expect(newValue).to.equal("select * where { ?subject <http://www.opengis.net/ont/geosparql#defaultGeometry>");
 
-    describe("getCompleteToken", () => {
-      it("Should expand to the end", async () => {
-        await page.evaluate(() => {
-          const oneLineQuery = "select * where { ?subject <http://www.opengis.net/ont/geosparql#";
-          window.yasqe.setValue(oneLineQuery);
-          window.yasqe.focus();
-          window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf("opengis") });
-        });
-        const token = await getCompleteToken();
-        expect(token.string).to.equal("<http://www.opengis.net/ont/geosparql#");
-      });
+  //     await page.evaluate(() => {
+  //       const oneLineQuery = "select * where { ?subject <http://www.opengis.net/ont/geosparql#";
+  //       window.yasqe.setValue(oneLineQuery);
+  //       window.yasqe.focus();
+  //       window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf("opengis") });
+  //     });
+  //     const token = await getCompleteToken();
+  //     expect(token.string).to.equal("<http://www.opengis.net/ont/geosparql#");
+  //   });
 
-      it("Autocompleter should show suggestion directly after function #156", async () => {
-        await page.evaluate(() => {
-          const oneLineQuery = "select * where { bind(";
-          window.yasqe.setValue(oneLineQuery);
-          window.yasqe.focus();
-          window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf("(") + 1 });
-        });
-        const token = await getCompleteToken();
-        expect(token.state.possibleCurrent).contains(
-          "IRI_REF",
-          `IRI_REF not found in list: "${token.state.possibleCurrent.join('", "')}"`,
-        );
-      });
-      it("Autocompleter should show literal suggestion directly after function #156", async () => {
-        await page.evaluate(() => {
-          const oneLineQuery = 'select * where { bind("';
-          window.yasqe.setValue(oneLineQuery);
-          window.yasqe.focus();
-          window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf('"') + 1 });
-        });
-        const token = await getCompleteToken();
-        expect(token.state.possibleCurrent).contains(
-          "IRI_REF",
-          `IRI_REF not found in list: "${token.state.possibleCurrent.join('", "')}"`,
-        );
-      });
-      it("Autocompleter should show correct results after closing bracket", async () => {
-        await page.evaluate(() => {
-          const oneLineQuery = "select * where { ?s ?p ?o }";
-          window.yasqe.setValue(oneLineQuery);
-          window.yasqe.focus();
-          window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf("}") + 1 });
-        });
-        const token = await getCompleteToken();
-        expect(token.state.possibleCurrent).contains(
-          "LIMIT",
-          `LIMIT not found in list: "${token.state.possibleCurrent.join('", "')}"`,
-        );
-      });
-    });
-    /**
-     * This test is tricky, as it uses the LOV API in our test. I.e, if this test fails, first check whether LOV is actually up
-     */
-    describe("Async property autocompletion", function () {
-      function focusOnAutocompletionPos() {
-        return page.evaluate(() => {
-          const query = `PREFIX geo: <http://www.opengis.net/ont/geosparql#> select * where {?x geo: ?y}`;
-          window.yasqe.setValue(query);
-          window.yasqe.focus();
-          window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf(": ?y") + 1 });
-          return window.yasqe.getDoc().getCursor();
-        });
-      }
-      it("Async autocompletions trickle down when typing", async () => {
-        // Set the new query, and focus on location where we want to autocomplete
-        await page.evaluate(() => {
-          const query = `select * where {?x <http://www.opengis.net/ont/geosparql#> ?y}`;
-          window.yasqe.setValue(query);
-          window.yasqe.focus();
-          window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf("#> ?y") + 1 });
-          return window.yasqe.getDoc().getCursor();
-        });
+  //   describe("getCompleteToken", () => {
+  //     it("Should expand to the end", async () => {
+  //       await page.evaluate(() => {
+  //         const oneLineQuery = "select * where { ?subject <http://www.opengis.net/ont/geosparql#";
+  //         window.yasqe.setValue(oneLineQuery);
+  //         window.yasqe.focus();
+  //         window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf("opengis") });
+  //       });
+  //       const token = await getCompleteToken();
+  //       expect(token.string).to.equal("<http://www.opengis.net/ont/geosparql#");
+  //     });
 
-        // Issue autocompletion shortcut
-        await issueAutocompletionKeyCombination();
-        // Wait for hint div to appear
-        const allInitialResults = await waitForAutocompletionPopup();
+  //     it("Autocompleter should show suggestion directly after function #156", async () => {
+  //       await page.evaluate(() => {
+  //         const oneLineQuery = "select * where { bind(";
+  //         window.yasqe.setValue(oneLineQuery);
+  //         window.yasqe.focus();
+  //         window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf("(") + 1 });
+  //       });
+  //       const token = await getCompleteToken();
+  //       expect(token.state.possibleCurrent).contains(
+  //         "IRI_REF",
+  //         `IRI_REF not found in list: "${token.state.possibleCurrent.join('", "')}"`,
+  //       );
+  //     });
+  //     it("Autocompleter should show literal suggestion directly after function #156", async () => {
+  //       await page.evaluate(() => {
+  //         const oneLineQuery = 'select * where { bind("';
+  //         window.yasqe.setValue(oneLineQuery);
+  //         window.yasqe.focus();
+  //         window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf('"') + 1 });
+  //       });
+  //       const token = await getCompleteToken();
+  //       expect(token.state.possibleCurrent).contains(
+  //         "IRI_REF",
+  //         `IRI_REF not found in list: "${token.state.possibleCurrent.join('", "')}"`,
+  //       );
+  //     });
+  //     it("Autocompleter should show correct results after closing bracket", async () => {
+  //       await page.evaluate(() => {
+  //         const oneLineQuery = "select * where { ?s ?p ?o }";
+  //         window.yasqe.setValue(oneLineQuery);
+  //         window.yasqe.focus();
+  //         window.yasqe.getDoc().setCursor({ line: 0, ch: oneLineQuery.indexOf("}") + 1 });
+  //       });
+  //       const token = await getCompleteToken();
+  //       expect(token.state.possibleCurrent).contains(
+  //         "LIMIT",
+  //         `LIMIT not found in list: "${token.state.possibleCurrent.join('", "')}"`,
+  //       );
+  //     });
+  //   });
+  //   /**
+  //    * This test is tricky, as it uses the LOV API in our test. I.e, if this test fails, first check whether LOV is actually up
+  //    */
+  //   describe("Async property autocompletion", function () {
+  //     function focusOnAutocompletionPos() {
+  //       return page.evaluate(() => {
+  //         const query = `PREFIX geo: <http://www.opengis.net/ont/geosparql#> select * where {?x geo: ?y}`;
+  //         window.yasqe.setValue(query);
+  //         window.yasqe.focus();
+  //         window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf(": ?y") + 1 });
+  //         return window.yasqe.getDoc().getCursor();
+  //       });
+  //     }
+  //     it("Async autocompletions trickle down when typing", async () => {
+  //       // Set the new query, and focus on location where we want to autocomplete
+  //       await page.evaluate(() => {
+  //         const query = `select * where {?x <http://www.opengis.net/ont/geosparql#> ?y}`;
+  //         window.yasqe.setValue(query);
+  //         window.yasqe.focus();
+  //         window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf("#> ?y") + 1 });
+  //         return window.yasqe.getDoc().getCursor();
+  //       });
 
-        // Widdle the list down
-        await type("asWK");
-        const newResults = await waitForAutocompletionPopup(allInitialResults);
-        expect(newResults).is.lessThan(allInitialResults || 0);
-      });
+  //       // Issue autocompletion shortcut
+  //       await issueAutocompletionKeyCombination();
+  //       // Wait for hint div to appear
+  //       const allInitialResults = await waitForAutocompletionPopup();
 
-      it("Should not append the string we just typed (#1479)", async function () {
-        /**
-         * Set the new query, and focus on location where we want to autocomplete
-         */
-        await focusOnAutocompletionPos();
+  //       // Widdle the list down
+  //       await type("asWK");
+  //       const newResults = await waitForAutocompletionPopup(allInitialResults);
+  //       expect(newResults).is.lessThan(allInitialResults || 0);
+  //     });
 
-        /**
-         * Issue autocompletion shortcut
-         */
-        await issueAutocompletionKeyCombination();
+  //     it("Should not append the string we just typed (#1479)", async function () {
+  //       /**
+  //        * Set the new query, and focus on location where we want to autocomplete
+  //        */
+  //       await focusOnAutocompletionPos();
 
-        /**
-         * Wait for hint div to appear
-         */
-        const allInitialResults = await waitForAutocompletionPopup();
+  //       /**
+  //        * Issue autocompletion shortcut
+  //        */
+  //       await issueAutocompletionKeyCombination();
 
-        /**
-         * Type a string to reduce autocompletion list
-         */
-        await type("asW");
+  //       /**
+  //        * Wait for hint div to appear
+  //        */
+  //       const allInitialResults = await waitForAutocompletionPopup();
 
-        /**
-         * Wait for the hint div to be updated to only match suggestions starting with `rcc`
-         */
-        const numResults = await waitForAutocompletionPopup(allInitialResults);
-        expect(numResults).to.be.lessThan(10);
-        /**
-         * Select the first suggestion
-         */
-        await page.keyboard.press("Enter");
+  //       /**
+  //        * Type a string to reduce autocompletion list
+  //        */
+  //       await type("asW");
 
-        /**
-         * Check whether that suggestion is now correctly included in yasqe
-         */
-        await wait(20);
-        const newValue = await page.evaluate(() => window.yasqe.getValue());
-        expect(newValue.trim()).to.equal(
-          `PREFIX geo: <http://www.opengis.net/ont/geosparql#> select * where {?x geo:asWKT ?y}`,
-        );
-      });
-      it("Should only include matching strings", async function () {
-        /**
-         * Set the new query, and focus on location where we want to autocomplete
-         */
-        await focusOnAutocompletionPos();
+  //       /**
+  //        * Wait for the hint div to be updated to only match suggestions starting with `rcc`
+  //        */
+  //       const numResults = await waitForAutocompletionPopup(allInitialResults);
+  //       expect(numResults).to.be.lessThan(10);
+  //       /**
+  //        * Select the first suggestion
+  //        */
+  //       await page.keyboard.press("Enter");
 
-        /**
-         * Issue autocompletion shortcut
-         */
-        await issueAutocompletionKeyCombination();
+  //       /**
+  //        * Check whether that suggestion is now correctly included in yasqe
+  //        */
+  //       await wait(20);
+  //       const newValue = await page.evaluate(() => window.yasqe.getValue());
+  //       expect(newValue.trim()).to.equal(
+  //         `PREFIX geo: <http://www.opengis.net/ont/geosparql#> select * where {?x geo:asWKT ?y}`,
+  //       );
+  //     });
+  //     it("Should only include matching strings", async function () {
+  //       /**
+  //        * Set the new query, and focus on location where we want to autocomplete
+  //        */
+  //       await focusOnAutocompletionPos();
 
-        /**
-         * Wait for hint div to appear
-         */
-        const allResults = await waitForAutocompletionPopup();
+  //       /**
+  //        * Issue autocompletion shortcut
+  //        */
+  //       await issueAutocompletionKeyCombination();
 
-        /**
-         * Type a string to reduce autocompletion list
-         */
-        await type("defau");
-        /**
-         * Wait for the hint div to be updated to only match suggestions starting with `rcc`
-         */
-        const numResults = await waitForAutocompletionPopup(allResults);
-        await wait(20);
-        expect(numResults).to.equal(1);
-        /**
-         * Select the first suggestion
-         */
-        await page.keyboard.press("Enter");
+  //       /**
+  //        * Wait for hint div to appear
+  //        */
+  //       const allResults = await waitForAutocompletionPopup();
 
-        /**
-         * Check whether that suggestion is now correctly included in yasqe
-         */
-        const newValue = await page.evaluate(() => window.yasqe.getValue());
-        expect(newValue).to.equal(
-          "PREFIX geo: <http://www.opengis.net/ont/geosparql#> select * where {?x geo:defaultGeometry ?y}",
-        );
-      });
-    });
-    describe("Async class autocompletion", function () {
-      function focusOnAutocompletionPos() {
-        return page.evaluate(() => {
-          const query = `PREFIX testb: <https://test.b.com/> select * where {?x a <htt`;
-          window.yasqe.setValue(query);
-          window.yasqe.focus();
-          window.yasqe.getDoc().setCursor({ line: 0, ch: query.length - 2 });
-          return window.yasqe.getDoc().getCursor();
-        });
-      }
-      it("Should use correct token for autocompleting classes (#1852)", async function () {
-        /**
-         * Set the new query, and focus on location where we want to autocomplete
-         */
-        await focusOnAutocompletionPos();
+  //       /**
+  //        * Type a string to reduce autocompletion list
+  //        */
+  //       await type("defau");
+  //       /**
+  //        * Wait for the hint div to be updated to only match suggestions starting with `rcc`
+  //        */
+  //       const numResults = await waitForAutocompletionPopup(allResults);
+  //       await wait(20);
+  //       expect(numResults).to.equal(1);
+  //       /**
+  //        * Select the first suggestion
+  //        */
+  //       await page.keyboard.press("Enter");
 
-        /**
-         * Issue autocompletion shortcut
-         */
-        await issueAutocompletionKeyCombination();
+  //       /**
+  //        * Check whether that suggestion is now correctly included in yasqe
+  //        */
+  //       const newValue = await page.evaluate(() => window.yasqe.getValue());
+  //       expect(newValue).to.equal(
+  //         "PREFIX geo: <http://www.opengis.net/ont/geosparql#> select * where {?x geo:defaultGeometry ?y}",
+  //       );
+  //     });
+  //   });
+  //   describe("Async class autocompletion", function () {
+  //     function focusOnAutocompletionPos() {
+  //       return page.evaluate(() => {
+  //         const query = `PREFIX testb: <https://test.b.com/> select * where {?x a <htt`;
+  //         window.yasqe.setValue(query);
+  //         window.yasqe.focus();
+  //         window.yasqe.getDoc().setCursor({ line: 0, ch: query.length - 2 });
+  //         return window.yasqe.getDoc().getCursor();
+  //       });
+  //     }
+  //     it("Should use correct token for autocompleting classes (#1852)", async function () {
+  //       /**
+  //        * Set the new query, and focus on location where we want to autocomplete
+  //        */
+  //       await focusOnAutocompletionPos();
 
-        /**
-         * Wait for hint div to appear
-         */
-        const allResults = await waitForAutocompletionPopup();
-        expect(allResults).to.equal(1000);
-      });
-      it("Should not open on its own", async () => {
-        await focusOnAutocompletionPos();
+  //       /**
+  //        * Issue autocompletion shortcut
+  //        */
+  //       await issueAutocompletionKeyCombination();
 
-        try {
-          const hasAutocomplete = await page.waitForSelector(`.CodeMirror-hints`, { timeout: 200 });
-          expect(hasAutocomplete).to.be.undefined("", "Expected codemirror hint to not be there");
-        } catch (e) {
-          // We expect the timeout to trigger here
-          if ((e as any).name !== "TimeoutError") {
-            throw e;
-          }
-        }
-      });
-      it("Should auto open when autocompleter is Async and ontype is enabled", async () => {
-        await page.evaluate(() => {
-          (window.yasqe.autocompleters["class-local"] as any).config.autoShow = true;
-        });
-        await focusOnAutocompletionPos();
-        await page.waitForSelector(`.CodeMirror-hints`);
-      });
-    });
-    describe("Async prefix autocompletion", function () {
-      function focusOnAutocompletionPos() {
-        return page.evaluate(() => {
-          window.yasqe.setValue("");
-          window.yasqe.focus();
-          window.yasqe.getDoc().setCursor({ line: 0, ch: 0 });
-          return window.yasqe.getDoc().getCursor();
-        });
-      }
+  //       /**
+  //        * Wait for hint div to appear
+  //        */
+  //       const allResults = await waitForAutocompletionPopup();
+  //       expect(allResults).to.equal(1000);
+  //     });
+  //     it("Should not open on its own", async () => {
+  //       await focusOnAutocompletionPos();
 
-      it("Should autocomplete", async function () {
-        // await inspectLive(this);
-        /**
-         * Set the new query, and focus on location where we want to autocomplete
-         */
-        await focusOnAutocompletionPos();
-        /**
-         * Issue autocompletion shortcut
-         */
-        await type("prefix t");
-        /**
-         * Wait for hint div to appear
-         */
-        const results = await waitForAutocompletionPopup();
-        expect(results).to.equal(3);
+  //       try {
+  //         const hasAutocomplete = await page.waitForSelector(`.CodeMirror-hints`, { timeout: 200 });
+  //         expect(hasAutocomplete).to.be.undefined("", "Expected codemirror hint to not be there");
+  //       } catch (e) {
+  //         // We expect the timeout to trigger here
+  //         if ((e as any).name !== "TimeoutError") {
+  //           throw e;
+  //         }
+  //       }
+  //     });
+  //     it("Should auto open when autocompleter is Async and ontype is enabled", async () => {
+  //       await page.evaluate(() => {
+  //         (window.yasqe.autocompleters["class-local"] as any).config.autoShow = true;
+  //       });
+  //       await focusOnAutocompletionPos();
+  //       await page.waitForSelector(`.CodeMirror-hints`);
+  //     });
+  //   });
+  //   describe("Async prefix autocompletion", function () {
+  //     function focusOnAutocompletionPos() {
+  //       return page.evaluate(() => {
+  //         window.yasqe.setValue("");
+  //         window.yasqe.focus();
+  //         window.yasqe.getDoc().setCursor({ line: 0, ch: 0 });
+  //         return window.yasqe.getDoc().getCursor();
+  //       });
+  //     }
 
-        /**
-         * Type a string to reduce autocompletion list
-         */
-        await type("esta");
+  //     it("Should autocomplete", async function () {
+  //       // await inspectLive(this);
+  //       /**
+  //        * Set the new query, and focus on location where we want to autocomplete
+  //        */
+  //       await focusOnAutocompletionPos();
+  //       /**
+  //        * Issue autocompletion shortcut
+  //        */
+  //       await type("prefix t");
+  //       /**
+  //        * Wait for hint div to appear
+  //        */
+  //       const results = await waitForAutocompletionPopup();
+  //       expect(results).to.equal(3);
 
-        const filteredResults = await waitForAutocompletionPopup(3);
-        expect(filteredResults).to.equal(1);
-        /**
-         * Select the first suggestion
-         */
-        await page.keyboard.press("Enter");
+  //       /**
+  //        * Type a string to reduce autocompletion list
+  //        */
+  //       await type("esta");
 
-        /**
-         * Check whether that suggestion is now correctly included in yasqe
-         */
-        const newValue = await page.evaluate(() => window.yasqe.getValue());
-        expect(newValue).to.equal("prefix testa: <https://test.a.com/>");
-      });
-    });
+  //       const filteredResults = await waitForAutocompletionPopup(3);
+  //       expect(filteredResults).to.equal(1);
+  //       /**
+  //        * Select the first suggestion
+  //        */
+  //       await page.keyboard.press("Enter");
 
-    describe("Single line autocompletion", function () {
-      async function executeFirstLineAutocompletion(query: string) {
-        await page.evaluate((query) => {
-          window.yasqe.setValue(query);
-          window.yasqe.focus();
-          window.yasqe.getDoc().setCursor(1, 0);
-          return window.yasqe.getDoc().getCursor();
-        }, query);
-        await page.keyboard.press("End");
+  //       /**
+  //        * Check whether that suggestion is now correctly included in yasqe
+  //        */
+  //       const newValue = await page.evaluate(() => window.yasqe.getValue());
+  //       expect(newValue).to.equal("prefix testa: <https://test.a.com/>");
+  //     });
+  //   });
 
-        await issueAutocompletionKeyCombination();
-        await waitForAutocompletionPopup();
-        await page.keyboard.press("Enter");
-        return page.evaluate(() => window.yasqe.getValue());
-      }
+  //   describe("Single line autocompletion", function () {
+  //     async function executeFirstLineAutocompletion(query: string) {
+  //       await page.evaluate((query) => {
+  //         window.yasqe.setValue(query);
+  //         window.yasqe.focus();
+  //         window.yasqe.getDoc().setCursor(1, 0);
+  //         return window.yasqe.getDoc().getCursor();
+  //       }, query);
+  //       await page.keyboard.press("End");
 
-      it("Should autocomplete with multiple statements on one line", async function () {
-        const query = `SELECT * WHERE {
-          ?a <somwething.something.without.bbc.url> ?b. ?a <http
-        }`;
-        const autocompletedQuery = await executeFirstLineAutocompletion(query);
-        expect(autocompletedQuery).to.contain("<http://www.opengis.net/ont/geosparql#defaultGeometry>");
-      });
+  //       await issueAutocompletionKeyCombination();
+  //       await waitForAutocompletionPopup();
+  //       await page.keyboard.press("Enter");
+  //       return page.evaluate(() => window.yasqe.getValue());
+  //     }
 
-      it("Should autocomplete with single-line Predicate-Object lists", async function () {
-        const query = `SELECT * WHERE {
-          ?a <somwething.something.without.bbc.url> ?b ; <http
-        }`;
-        const autocompletedQuery = await executeFirstLineAutocompletion(query);
-        expect(autocompletedQuery).to.contain("<http://www.opengis.net/ont/geosparql#defaultGeometry>");
-      });
+  //     it("Should autocomplete with multiple statements on one line", async function () {
+  //       const query = `SELECT * WHERE {
+  //         ?a <somwething.something.without.bbc.url> ?b. ?a <http
+  //       }`;
+  //       const autocompletedQuery = await executeFirstLineAutocompletion(query);
+  //       expect(autocompletedQuery).to.contain("<http://www.opengis.net/ont/geosparql#defaultGeometry>");
+  //     });
 
-      it("Should autocomplete with single-line Object lists", async function () {
-        const query = `SELECT * WHERE {
-          ?a a ?b, <http
-        }`;
-        const autocompletedQuery = await executeFirstLineAutocompletion(query);
-        expect(autocompletedQuery).to.contain("<https://test.b.com/0>");
-      });
-    });
-  });
+  //     it("Should autocomplete with single-line Predicate-Object lists", async function () {
+  //       const query = `SELECT * WHERE {
+  //         ?a <somwething.something.without.bbc.url> ?b ; <http
+  //       }`;
+  //       const autocompletedQuery = await executeFirstLineAutocompletion(query);
+  //       expect(autocompletedQuery).to.contain("<http://www.opengis.net/ont/geosparql#defaultGeometry>");
+  //     });
+
+  //     it("Should autocomplete with single-line Object lists", async function () {
+  //       const query = `SELECT * WHERE {
+  //         ?a a ?b, <http
+  //       }`;
+  //       const autocompletedQuery = await executeFirstLineAutocompletion(query);
+  //       expect(autocompletedQuery).to.contain("<https://test.b.com/0>");
+  //     });
+  //   });
+  // });
 });

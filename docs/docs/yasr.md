@@ -12,7 +12,7 @@ import "@zazuko/yasqe/style.css";
 import "@zazuko/yasr/style.css";
 
 const yasqe = new Yasqe(document.getElementById("yasqe")!, {
-  requestConfig: { endpoint: "https://dbpedia.org/sparql" },
+  requestConfig: { endpoint: "https://sparql.dblp.org/sparql" },
 });
 const yasr = new Yasr(document.getElementById("yasr")!, {
   // resolve prefixed names in results using the query's PREFIX declarations

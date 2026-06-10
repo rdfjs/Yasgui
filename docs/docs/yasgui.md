@@ -9,7 +9,7 @@ import "@zazuko/yasgui/style.css";
 import { createQlueLsWorker, configureQlueLsBackend } from "./qlue-ls";
 
 const yasgui = new Yasgui(document.getElementById("yasgui")!, {
-  requestConfig: { endpoint: "https://dbpedia.org/sparql" },
+  requestConfig: { endpoint: "https://sparql.dblp.org/sparql" },
   languageServerWorker: createQlueLsWorker,
   onEndpointChange: (yasgui, endpoint) =>
     configureQlueLsBackend(yasgui.yasqe?.getLanguageClient(), endpoint),

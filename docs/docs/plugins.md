@@ -4,6 +4,44 @@ Yasr renders a SPARQL response through one of several plugins. The right plugin 
 
 The **Table**, **Boolean**, **Response** and **Error** plugins are built in. **Graph** and **Geo** are community plugins registered by the demo (see [Yasr](./yasr#result-view-plugins)).
 
+## Configuring plugins
+
+Plugins are configured through the `yasr` slot of the Yasgui config. Three options control which plugins are available and how they are ordered:
+
+```ts
+import Yasgui from '@zazuko/yasgui';
+import '@zazuko/yasgui/style.css';
+
+const yasgui = new Yasgui(document.getElementById('yasgui'), {
+  yasr: {
+    // Tab order in the result area (plugins not listed are appended alphabetically)
+    pluginOrder: ['table', 'response'],
+    // Plugin selected when no better match is found for a response
+    defaultPlugin: 'table',
+    // Per-plugin configuration, keyed by the name used at registration
+    plugins: {
+      table: {
+        enabled: true,
+        // Initial values for the plugin's own settings (also adjustable in the UI)
+        dynamicConfig: { pageSize: 50, compact: false },
+      },
+      response: {
+        enabled: true,
+        dynamicConfig: { maxLines: 60 },
+      },
+      // Disable a built-in plugin entirely
+      boolean: { enabled: false },
+    },
+  },
+});
+```
+
+Notes:
+
+- The key in `plugins` is the name passed to `Yasgui.Yasr.registerPlugin(name, …)` (`table`, `response`, `boolean`, plus any community plugins you register).
+- `dynamicConfig` seeds the plugin's per-tab settings. Values the user later changes through the plugin UI are persisted to `localStorage` and take precedence on the next load.
+- Defaults: `pluginOrder` is `['table', 'response']` and `defaultPlugin` is `'table'`.
+
 ## Table
 
 Renders `SELECT` results as an interactive table: sortable columns, real-time search filtering, virtual scrolling for large result sets, and cell selection with copy to clipboard (Markdown, CSV, TSV).
@@ -13,6 +51,24 @@ SELECT ?item ?itemLabel WHERE {
   ?item wdt:P31 wd:Q146 .
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 } LIMIT 100
+```
+
+Config (`yasr.plugins.table.dynamicConfig`):
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `pageSize` | `number` | `50` | Rows shown per page. |
+| `compact` | `boolean` | `false` | Compact rendering: hide the first index column and collapse IRI brackets. |
+| `isEllipsed` | `boolean` | `true` | Truncate long cell values with an ellipsis (expand on click). |
+
+```ts
+const yasgui = new Yasgui(document.getElementById('yasgui'), {
+  yasr: {
+    plugins: {
+      table: { dynamicConfig: { pageSize: 100, compact: true } },
+    },
+  },
+});
 ```
 
 ## Boolean
@@ -31,6 +87,22 @@ Shows the raw endpoint response with syntax highlighting (JSON, XML, Turtle…),
 SELECT * WHERE { ?s ?p ?o } LIMIT 10
 ```
 
+Config (`yasr.plugins.response.dynamicConfig`):
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `maxLines` | `number` | `30` | Maximum number of lines rendered before the output is truncated (the full payload is still available via copy/download). |
+
+```ts
+const yasgui = new Yasgui(document.getElementById('yasgui'), {
+  yasr: {
+    plugins: {
+      response: { dynamicConfig: { maxLines: 100 } },
+    },
+  },
+});
+```
+
 ## Geo
 
 ::: warning External plugin
@@ -41,8 +113,10 @@ Displays geographic results on an interactive [Leaflet](https://leafletjs.com/) 
 
 Integrate it:
 
+Register the plugin (under the name `geo`) **before** constructing Yasgui, then add it to `pluginOrder`:
+
 ```ts
-import Yasgui from '@rdfjs/yasgui';
+import Yasgui from '@zazuko/yasgui';
 import GeoPlugin from 'yasgui-geo-tg';
 
 Yasgui.Yasr.registerPlugin('geo', GeoPlugin);
@@ -54,6 +128,8 @@ const yasgui = new Yasgui(document.getElementById('yasgui'), {
   },
 });
 ```
+
+The map controls (basemap, color, clustering, export, drawing, time slider…) are driven from the plugin UI; there are no programmatic config options to pass through `yasr.plugins.geo`.
 
 Examples queries:
 
@@ -90,7 +166,7 @@ Renders `CONSTRUCT` / `DESCRIBE` results as an interactive node-edge graph with 
 Integrate it:
 
 ```ts
-import Yasgui from '@rdfjs/yasgui';
+import Yasgui from '@zazuko/yasgui';
 import GraphPlugin from '@matdata/yasgui-graph-plugin';
 
 Yasgui.Yasr.registerPlugin('graph', GraphPlugin);
@@ -100,6 +176,24 @@ const yasgui = new Yasgui(document.getElementById('yasgui'), {
     pluginOrder: ['table', 'response', 'graph'],
   },
 });
+```
+
+Graph settings (compact mode, edge style, node size…) are adjustable from the plugin's ⚙ panel and persisted to `localStorage`. To change the defaults, subclass the plugin and register your variant:
+
+```ts
+class MyGraphPlugin extends GraphPlugin {
+  constructor(yasr) {
+    super(yasr);
+    this.settings.compactMode = true;        // hide literal/class nodes (default: false)
+    this.settings.edgeStyle = 'straight';    // 'curved' | 'straight' (default: 'curved')
+    this.settings.nodeSize = 'large';        // 'small' | 'medium' | 'large' (default: 'medium')
+    this.settings.predicateDisplay = 'label';// 'label' | 'icon' | 'hidden' (default: 'icon')
+    this.settings.physicsEnabled = false;    // disable force-directed layout (default: true)
+    this.settings.showNodeLabels = true;     // display node labels (default: true)
+  }
+}
+
+Yasgui.Yasr.registerPlugin('graph', MyGraphPlugin);
 ```
 
 Example query:
