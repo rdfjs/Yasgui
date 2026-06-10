@@ -41,7 +41,7 @@ export default defineConfig({
           text: "Configuration",
           items: [
             { text: "Language server", link: "/docs/language-server" },
-            { text: "Result plugins", link: "/docs/plugins" },
+            { text: "Results plugins", link: "/docs/plugins" },
             { text: "Request configuration", link: "/docs/request-config" },
             { text: "Theming", link: "/docs/theming" },
             { text: "Monaco editor options", link: "/docs/editor-options" },

@@ -139,6 +139,14 @@ html[data-theme="dark"] {
     .tabMenu .textSetting input[type="text"]:focus {
       border-color: var(--yg-d-link);
     }
+    .tabMenu .selector select {
+      background: var(--yg-d-raised);
+      color: var(--yg-d-text);
+      border-color: var(--yg-d-border-strong);
+    }
+    .tabMenu .selector select:focus {
+      border-color: var(--yg-d-link);
+    }
 
     .yasgui_textfield > input,
     .yasgui_textfield > textarea {
@@ -291,6 +299,14 @@ html[data-theme="dark"] {
         border-color: var(--yg-d-border-strong);
       }
       .tabMenu .textSetting input[type="text"]:focus {
+        border-color: var(--yg-d-link);
+      }
+      .tabMenu .selector select {
+        background: var(--yg-d-raised);
+        color: var(--yg-d-text);
+        border-color: var(--yg-d-border-strong);
+      }
+      .tabMenu .selector select:focus {
         border-color: var(--yg-d-link);
       }
 
