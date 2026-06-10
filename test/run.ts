@@ -42,6 +42,8 @@ describe("Yasqe", function () {
   beforeEach(async () => {
     page = await getPage(browser, "yasqe.html");
     await page.evaluate(() => localStorage.clear());
+    // Wait for the Monaco editor async init to finish (editor is created in initEditor() which is not awaited in the constructor)
+    await page.waitForFunction(() => !!(window as any).yasqe?.editor, { timeout: 15000 });
   });
 
   afterEach(async () => {
@@ -60,16 +62,19 @@ describe("Yasqe", function () {
   });
 
   async function waitForAutocompletionPopup(shouldNotHaveLength?: number): Promise<number | undefined> {
-    if (shouldNotHaveLength) {
+    if (shouldNotHaveLength !== undefined) {
       await page.waitForFunction(
-        `document.querySelector('.CodeMirror-hints').children.length !== ${shouldNotHaveLength}`,
-        { timeout: 600 },
+        (n: number) => document.querySelectorAll(".suggest-widget.visible .monaco-list-row").length !== n,
+        { timeout: 2000 },
+        shouldNotHaveLength,
       );
     } else {
-      await page.waitForSelector(`.CodeMirror-hints`, { timeout: 600 });
-      await wait(20);
+      await page.waitForFunction(() => document.querySelector(".suggest-widget")?.classList.contains("visible"), {
+        timeout: 2000,
+      });
+      await wait(50);
     }
-    return page.evaluate(() => document.querySelector(".CodeMirror-hints")?.children.length);
+    return page.evaluate(() => document.querySelectorAll(".suggest-widget.visible .monaco-list-row").length);
   }
 
   async function issueAutocompletionKeyCombination() {
@@ -78,90 +83,103 @@ describe("Yasqe", function () {
     await page.keyboard.up("Control");
   }
 
-  // TODO: rewrite for the Monaco/qlue-ls API (autoformat -> LSP formatting).
-  describe.skip("Autoformatting", function () {
+  // Autoformatting via LSP document-format action (qlue-ls provides textDocument/formatting).
+  describe("Autoformatting", function () {
+    // Each test gets a fresh page (from the outer beforeEach); wait for the LSP to connect per-page.
+    beforeEach(async function () {
+      this.timeout(15000);
+      // qlue-ls logs "initialization completed" once ready; poll until language client is live
+      await page.waitForFunction(() => !!(window as any).yasqe?.getLanguageClient?.(), {
+        timeout: 12000,
+        polling: 200,
+      });
+      await wait(500); // let the client settle before issuing format requests
+    });
     it("With literal", async function () {
-      const value = await page.evaluate(() => {
+      this.timeout(10000);
+      const value = await page.evaluate(async () => {
         window.yasqe.setValue(
           `PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> select * {   ?a rdf:b ?c ;     rdf:d "e" ;     rdf:f rdf:g .}`,
         );
-        window.yasqe.autoformat();
+        await new Promise((r) => setTimeout(r, 400));
+        await window.yasqe.editor.getAction("editor.action.formatDocument")?.run();
+        await new Promise((r) => setTimeout(r, 1000));
         return window.yasqe.getValue();
       });
-      expect(value).to.equal(`PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-select * {
-  ?a rdf:b ?c ;
-     rdf:d "e" ;
-     rdf:f rdf:g .
-}`);
+      expect(value).to.equal(
+        `PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nSELECT * {\n  ?a rdf:b ?c ;\n     rdf:d "e" ;\n     rdf:f rdf:g .\n}`,
+      );
     });
     it("With group concat", async function () {
-      const value = await page.evaluate(() => {
+      this.timeout(10000);
+      const value = await page.evaluate(async () => {
         window.yasqe.setValue(`select (group_concat(str(?a); separator='" "') as ?b) { }`);
-        window.yasqe.autoformat();
+        await new Promise((r) => setTimeout(r, 400));
+        await window.yasqe.editor.getAction("editor.action.formatDocument")?.run();
+        await new Promise((r) => setTimeout(r, 1000));
         return window.yasqe.getValue();
       });
-      expect(value).to.equal(`select (group_concat(str(?a); separator='" "') as ?b) {
-}`);
+      expect(value).to.equal(`SELECT (GROUP_CONCAT(STR(?a); SEPARATOR='" "') AS ?b) {}`);
     });
   });
-  // TODO: rewrite for the Monaco/qlue-ls API (getDoc/setCursor + .CodeMirror-hints are gone).
-  describe.skip("Autoadd prefixes", function () {
+  // Autoadd prefixes: qlue-ls automatically inserts a PREFIX declaration when a known namespace
+  // prefix is typed as a SPARQL prefix reference (e.g. "foaf:").
+  describe("Autoadd prefixes", function () {
+    // Each test gets a fresh page; wait for LSP per-page.
+    beforeEach(async function () {
+      this.timeout(15000);
+      await page.waitForFunction(() => !!(window as any).yasqe?.getLanguageClient?.(), {
+        timeout: 12000,
+        polling: 200,
+      });
+      await wait(500);
+    });
     //note: this test also covers the infinite loop issue described here:
     //https://github.com/TriplyDB/YASGUI.YASQE/issues/135
     it("Should autoadd foaf prefix", async function () {
-      await page.evaluate(() => {
-        const query = `# prefix #
-PREFIX geo: <http://www.opengis.net/ont/geosparql#> select
-* where { `;
-        window.yasqe.setValue(query);
+      this.timeout(10000);
+      const query = `# prefix #\nPREFIX geo: <http://www.opengis.net/ont/geosparql#> select\n* where { `;
+      await page.evaluate((q: string) => {
+        window.yasqe.setValue(q);
         window.yasqe.focus();
-        window.yasqe.getDoc().setCursor({ line: window.yasqe.getDoc().lineCount(), ch: 0 });
-        return window.yasqe.getDoc().getCursor();
-      });
+        const m = window.yasqe.editor.getModel();
+        const lastLine = m.getLineCount();
+        // Move to end of last line so "foaf:" is typed in SPARQL triple position
+        window.yasqe.editor.setPosition({ lineNumber: lastLine, column: m.getLineMaxColumn(lastLine) });
+      }, query);
       await type("foaf:");
       await page.waitForFunction(
-        () => {
-          return window.yasqe.getValue().indexOf("PREFIX foaf: <http://xmlns.com/foaf/0.1/>") >= 0;
-        },
-        {
-          polling: 10,
-        },
+        () => window.yasqe.getValue().indexOf("PREFIX foaf: <http://xmlns.com/foaf/0.1/>") >= 0,
+        { polling: 10, timeout: 5000 },
       );
     });
-    it("should show prefix completions after adding new prefix", async () => {
+    // TODO: rewrite for qlue-ls - the old test relied on a custom test autocompleter that knew about
+    // "testa: <https://test.a.com/>". qlue-ls does not have this prefix built-in. To restore this
+    // test, configure a qlue-ls backend with test data that includes testa: completions.
+    it.skip("should show prefix completions after adding new prefix", async () => {
       await page.evaluate(() => {
-        const query = `# prefix #
-PREFIX geo: <http://www.opengis.net/ont/geosparql#> select
-* where { ?sub `;
+        const query = `# prefix #\nPREFIX geo: <http://www.opengis.net/ont/geosparql#> select\n* where { ?sub `;
         window.yasqe.setValue(query);
         window.yasqe.focus();
-        window.yasqe.getDoc().setCursor({ line: window.yasqe.getDoc().lineCount(), ch: 0 });
-        return window.yasqe.getDoc().getCursor();
+        const m = window.yasqe.editor.getModel();
+        const lastLine = m.getLineCount();
+        window.yasqe.editor.setPosition({ lineNumber: lastLine, column: m.getLineMaxColumn(lastLine) });
       });
       await type("testa:");
-      await page.waitForFunction(
-        () => {
-          return window.yasqe.getValue().indexOf("PREFIX testa: <https://test.a.com/>") >= 0;
-        },
-        {
-          polling: 10,
-        },
-      );
-      //Note from Laurens: This is an invalid test. We should not expect a popup here (this is the property-autocompleter).
-      //Reason: we didn't configure yasgui to auto-show the lov property completions
-      //Leaving it here as it doesn't warrant a new issue yet.
+      await page.waitForFunction(() => window.yasqe.getValue().indexOf("PREFIX testa: <https://test.a.com/>") >= 0, {
+        polling: 10,
+      });
       await waitForAutocompletionPopup();
     });
-    it("path traversal should change the correct segment", async () => {
-      await page.evaluate(() => {
-        const query =
-          "PREFIX testa: <https://test.a.com/> select * where { ?s testa:someprop/testa:/testa:someotherprop";
-        window.yasqe.setValue(query);
+    // TODO: rewrite for qlue-ls - path-traversal completion used the old custom testa: autocompleter.
+    // Needs a configured backend with testa: term data to work.
+    it.skip("path traversal should change the correct segment", async () => {
+      const query = "PREFIX testa: <https://test.a.com/> select * where { ?s testa:someprop/testa:/testa:someotherprop";
+      await page.evaluate((q: string) => {
+        window.yasqe.setValue(q);
         window.yasqe.focus();
-        window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf(":/testa:someotherprop") });
-        return window.yasqe.getDoc().getCursor();
-      });
+        window.yasqe.editor.setPosition({ lineNumber: 1, column: q.indexOf(":/testa:someotherprop") + 1 });
+      }, query);
       await issueAutocompletionKeyCombination();
       await waitForAutocompletionPopup();
       await page.keyboard.press("Enter");
@@ -170,28 +188,27 @@ PREFIX geo: <http://www.opengis.net/ont/geosparql#> select
         "PREFIX testa: <https://test.a.com/> select * where { ?s testa:someprop/testa:0/testa:someotherprop",
       );
     });
-    it("path traversal should search with the correct path segment", async () => {
-      await page.evaluate(() => {
-        const query =
-          "PREFIX testa: <https://test.a.com/> select * where { ?s testa:someprop/testa:someotherprop/testa;";
-        window.yasqe.setValue(query);
+    // TODO: rewrite for qlue-ls - same as above, needs testa: backend data.
+    it.skip("path traversal should search with the correct path segment", async () => {
+      const query = "PREFIX testa: <https://test.a.com/> select * where { ?s testa:someprop/testa:someotherprop/testa;";
+      await page.evaluate((q: string) => {
+        window.yasqe.setValue(q);
         window.yasqe.focus();
-        window.yasqe.getDoc().setCursor({ line: 0, ch: query.indexOf(";") });
-        return window.yasqe.getDoc().getCursor();
-      });
+        window.yasqe.editor.setPosition({ lineNumber: 1, column: q.indexOf(";") + 1 });
+      }, query);
       await issueAutocompletionKeyCombination();
       try {
         const hasAutocomplete = await waitForAutocompletionPopup();
-        expect(hasAutocomplete).to.be.undefined("", "Expected codemirror hint to not be there");
+        expect(hasAutocomplete).to.be.undefined("", "Expected no suggestion popup here");
       } catch (e) {
-        // We expect the timeout to trigger here
-        if ((e as any).name !== "TimeoutError") {
-          throw e;
-        }
+        if ((e as any).name !== "TimeoutError") throw e;
       }
     });
   });
-  // TODO: rewrite for the Monaco/qlue-ls API (getCompleteToken/autocompleters + .CodeMirror-hints are gone).
+  // Autocompleting: Monaco uses the LSP suggest widget (.suggest-widget) instead of .CodeMirror-hints.
+  // Cursor positioning uses editor.setPosition({ lineNumber, column }) (1-indexed, unlike CodeMirror's 0-indexed lines).
+  // Tests that relied on CodeMirror-internal APIs (getCompleteToken, autocompleters) or on the old LOV/custom
+  // test autocomplete data are kept as it.skip with a TODO explaining what is needed to restore them.
   describe.skip("Autocompleting", function () {
     const getCompleteToken = () => {
       return page.evaluate(() => window.yasqe.getCompleteToken());

@@ -1,3 +1,12 @@
+/* Sticky footer: page fills at least the viewport */
+.yasgui-home {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.yasgui-home .VPContent {
+  flex: 1 1 auto;
+}
 .yasgui-home .VPPage {
   padding: 0;
 }
@@ -9,42 +18,24 @@
   height: auto;
 }
 
-/* Make the demo a fixed-height viewport so the result area can flex. */
-.yasgui-demo,
-.yasgui-demo__root {
-  height: calc(100vh - var(--vp-nav-height, 64px));
-}
-.yasgui-demo .yasgui {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.yasgui-demo .yasgui > *:last-child, /* tabPanelsEl */
-.yasgui-demo .yasgui .tabPanel.active,
-.yasgui-demo .yasgui .tabPanel.active > *:last-child, /* yasrWrapperEl */
-.yasgui-demo .yasgui .yasr {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
+/* YASR and results: natural block height, no overflow clipping */
+.yasgui-demo .yasgui .yasr,
 .yasgui-demo .yasgui .yasr_results {
-  flex: 1 1 auto;
-  min-height: 0;
+  height: auto;
+  overflow: visible;
 }
-/* The graph plugin hardcodes 500px; fill the leftover space, with a floor so it
-   stays usable when the editor is large. */
+
+/* Graph plugin */
 .yasgui-demo .yasgui-graph-plugin-container {
-  height: 100%;
   min-height: 30vh;
 }
 
-/* Fix Geo plugin that was hidding footer  */
+/* Geo plugin/leaflet: needs an explicit height to render */
 .yasgui-demo .yasr_results .leaflet-container {
-  min-height: 0;
+  min-height: 300px;
 }
 
-/* VitePress dark mode uses class="dark" on <html>, while Yasgui's own dark theme keys off [data-theme="dark"]*/
+/* VitePress dark mode uses class="dark" on <html>, while Yasgui's own dark theme keys off [data-theme="dark"] */
 .dark .yasgui .clearEndpointBtn {
   background-color: var(--yg-d-border);
   border-color: var(--yg-d-border);

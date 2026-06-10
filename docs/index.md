@@ -1,6 +1,6 @@
 ---
 layout: page
-title: Yasgui · SPARQL query editor
+# title: Yasgui · SPARQL query editor
 pageClass: yasgui-home
 sidebar: false
 aside: false

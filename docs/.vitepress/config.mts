@@ -6,7 +6,6 @@ import importMetaUrlPlugin from "@codingame/esbuild-import-meta-url-plugin";
 export default defineConfig({
   title: "Yasgui",
   description: "Yet Another SPARQL GUI · a Monaco-based SPARQL query editor and result viewer",
-  // Deployed under https://rdfjs.github.io/Yasgui/
   base: "/Yasgui/",
   cleanUrls: true,
   lastUpdated: true,
@@ -64,17 +63,13 @@ export default defineConfig({
       text: "Edit this page on GitHub",
     },
     footer: {
-      message: '<a href="/Yasgui/docs/introduction">Documentation</a>',
+      message: '<a href="/Yasgui/docs/introduction">Documentation</a> · <a href="https://github.com/rdfjs/Yasgui">Source code</a>',
       copyright: "MIT License",
     },
   },
   vite: {
-    // The demo imports the @zazuko/* packages' pre-built, self-contained ESM bundles
-    // (build/yasgui.js, Monaco bundled in), exactly as a real consumer does. Run
-    // `npm run build:lib` before building/serving the docs so those bundles exist.
-    // We deliberately do NOT alias to TypeScript source: that pulls Monaco's deep
-    // @codingame/monaco-vscode-api/vscode/* imports into the build, which the older Vite
-    // that VitePress bundles cannot resolve.
+    // The demo imports the @zazuko/* packages' pre-built
+    // Run `npm run build:lib` before building/serving the docs so those bundles exist
     css: {
       preprocessorOptions: {
         scss: { api: "modern-compiler" },
@@ -88,15 +83,12 @@ export default defineConfig({
       plugins: () => [wasm()],
     },
     optimizeDeps: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       esbuildOptions: { plugins: [importMetaUrlPlugin as any] },
-      // The pre-built editor bundles ship their own internal chunks/assets; let Vite serve
-      // them as-is rather than re-bundling the heavy Monaco code.
+      // The pre-built editor bundles ship their own internal chunks/assets
       exclude: ["@zazuko/yasgui", "@zazuko/yasqe", "@zazuko/yasr"],
     },
     ssr: {
-      // The demo is client-only (mounted in onMounted, behind <ClientOnly>), so the editor
-      // packages and their Monaco dependencies must never enter the server bundle.
+      // The demo is client-only, so the editor deps must not enter the server bundle
       external: [
         "@zazuko/yasgui",
         "@zazuko/yasqe",
