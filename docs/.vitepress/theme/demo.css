@@ -10,6 +10,10 @@
 .yasgui-home .VPPage {
   padding: 0;
 }
+/* Hide the fixed "Return to top" local-nav bar that overlaps the demo on small screens */
+.yasgui-home .VPLocalNav {
+  display: none;
+}
 
 /* VitePress global CSS resets can inflate the endpoint input */
 .yasgui .autocomplete {

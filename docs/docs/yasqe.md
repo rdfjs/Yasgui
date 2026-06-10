@@ -42,5 +42,3 @@ example `queryResponse` is `(yasqe, response, duration)`.
 | `persistenceId` | localStorage namespace |
 | `languageServerWorker` | the LSP worker; omit for highlighting-only |
 | `onLanguageClientReady` | `(languageClient) => void`, fired once the LSP client is connected |
-
-See the [Yasqe API](./api) for the full list of methods and events.

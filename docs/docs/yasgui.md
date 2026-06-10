@@ -51,4 +51,3 @@ string / function to control the namespace.
 - [Request configuration](./request-config) · how queries are sent.
 - [Theming](./theming) · light/dark wiring.
 - [Monaco editor options](./editor-options) · customize the editor.
-- [Yasqe API](./api) · methods and events on the shared editor.
