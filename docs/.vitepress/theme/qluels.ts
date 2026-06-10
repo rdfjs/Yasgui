@@ -54,16 +54,160 @@ export function createQlueLsWorker(): Promise<Worker> {
   });
 }
 
+async function fetchPrefixMap(endpoint: string): Promise<PrefixMap> {
+  const prefixes: PrefixMap = {};
+  try {
+    const url = new URL(endpoint);
+    url.searchParams.set(
+      "query",
+      `PREFIX sh: <http://www.w3.org/ns/shacl#>
+      SELECT DISTINCT ?prefix ?namespace
+      WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix}
+      ORDER BY ?prefix`,
+    );
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      signal: AbortSignal.timeout(5000),
+      headers: { Accept: "application/sparql-results+json" },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const bindings = (await response.json()).results.bindings;
+    const used = new Set<string>();
+    bindings.forEach((b: any) => {
+      const prefix = b.prefix.value;
+      const namespace = b.namespace.value;
+      if (!used.has(namespace) && !prefixes[prefix]) {
+        prefixes[prefix] = namespace;
+        used.add(namespace);
+      }
+    });
+  } catch (error: any) {
+    console.warn(`Error retrieving prefixes from ${endpoint}:`, error?.message || error);
+  }
+  return Object.keys(prefixes).length === 0 ? fallbackPrefixMap : prefixes;
+}
+
+/** Build a flat qlue-ls BackendConfiguration for an endpoint, fetching prefixes when needed. */
+export async function createBackendConf(endpoint: string): Promise<BackendConfiguration> {
+  const prefixMap = await fetchPrefixMap(endpoint);
+  return {
+    name: endpoint,
+    url: endpoint,
+    prefixMap,
+    queries: completionQueries,
+    default: false,
+  };
+}
+
+// Avoid re-registering the same backend repeatedly
+let lastBackendEndpoint: string | undefined;
+
+/**
+ * Register a SPARQL endpoint with the qlue-ls language client and make it the default backend,
+ */
+export async function configureQlueLsBackend(languageClient: any, endpoint: string): Promise<void> {
+  if (!languageClient || !endpoint || endpoint === lastBackendEndpoint) return;
+  lastBackendEndpoint = endpoint;
+  try {
+    const backend = await createBackendConf(endpoint);
+    languageClient.sendNotification("qlueLs/addBackend", backend);
+    languageClient.sendNotification("qlueLs/updateDefaultBackend", { backendName: backend.name });
+  } catch (error) {
+    lastBackendEndpoint = undefined; // allow retry
+    console.error("Failed to configure qlue-ls backend for", endpoint, error);
+  }
+}
+
+// Shared code for the demo pages
+
+/** Default SPARQL endpoint used across the demo pages. */
+export const DEMO_ENDPOINT = "https://sparql.dblp.org/sparql";
+
+export type DevTheme = "light" | "dark";
+
+/**
+ * Wire the demo page's light/dark switcher: start from the OS preference, and on toggle set the
+ * `[data-theme]` attribute (which drives the CSS) and call `onThemeChange` (e.g. editor.setTheme).
+ */
+export function setupThemeToggle(onThemeChange?: (theme: DevTheme) => void): DevTheme {
+  let currentTheme: DevTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  document.documentElement.dataset.theme = currentTheme;
+  const button = document.getElementById("darkModeToggle");
+  const render = () => {
+    if (!button) return;
+    button.textContent = currentTheme === "dark" ? "☀️" : "🌙";
+    const title = currentTheme === "dark" ? "Switch to light theme" : "Switch to dark theme";
+    button.setAttribute("title", title);
+    button.setAttribute("aria-label", title);
+  };
+  render();
+  button?.addEventListener("click", () => {
+    currentTheme = currentTheme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = currentTheme;
+    render();
+    onThemeChange?.(currentTheme);
+  });
+  return currentTheme;
+}
+
 /** Minimal fallback prefixes used when an endpoint exposes none. */
 export const fallbackPrefixMap: PrefixMap = {
+  activitystreams: "https://www.w3.org/ns/activitystreams#",
+  bd: "http://www.bigdata.com/rdf#",
+  bibo: "http://purl.org/ontology/bibo/",
+  busco: "http://busco.ezlab.org/schema#",
+  chebi: "http://purl.obolibrary.org/obo/CHEBI_",
+  cito: "http://purl.org/spar/cito/",
+  csvw: "http://purl.org/csvw/vocab#",
+  dblp: "https://dblp.org/rdf/schema#",
+  dc: "http://purl.org/dc/elements/1.1/",
+  dcat: "http://www.w3.org/ns/dcat#",
+  dcmit: "http://purl.org/dc/dcmitype/",
+  dcterms: "http://purl.org/dc/terms/",
+  ECO: "http://purl.obolibrary.org/obo/ECO_",
+  ensembl: "http://rdf.ebi.ac.uk/resource/ensembl/",
+  hydra: "http://www.w3.org/ns/hydra/core#",
+  faldo: "http://biohackathon.org/resource/faldo#",
+  foaf: "http://xmlns.com/foaf/0.1/",
+  genex: "http://purl.org/genex#",
+  geo: "http://www.opengis.net/ont/geosparql#",
+  geof: "http://www.opengis.net/def/function/geosparql/",
+  go: "http://purl.obolibrary.org/obo/GO_",
+  mondo: "http://purl.obolibrary.org/obo/MONDO_",
+  np: "http://www.nanopub.org/nschema#",
+  npx: "http://purl.org/nanopub/x/",
+  obo: "http://purl.obolibrary.org/obo/",
+  oboInOwl: "http://www.geneontology.org/formats/oboInOwl#",
+  osmwiki: "https://www.openstreetmap.org/wiki/Key:",
+  owl: "http://www.w3.org/2002/07/owl#",
+  pav: "http://purl.org/pav/",
+  prov: "http://www.w3.org/ns/prov#",
+  pubmed: "http://purl.uniprot.org/pubmed/",
+  qudt: "http://qudt.org/schema/qudt/",
   rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
-  owl: "http://www.w3.org/2002/07/owl#",
-  xsd: "http://www.w3.org/2001/XMLSchema#",
+  rh: "http://rdf.rhea-db.org/",
+  schema: "http://schema.org/",
+  sd: "http://www.w3.org/ns/sparql-service-description#",
+  sh: "http://www.w3.org/ns/shacl#",
+  shex: "http://www.w3.org/ns/shex#",
+  sio: "http://semanticscience.org/resource/",
+  sioc: "http://rdfs.org/sioc/ns#",
   skos: "http://www.w3.org/2004/02/skos/core#",
-  foaf: "http://xmlns.com/foaf/0.1/",
-  dc: "http://purl.org/dc/elements/1.1/",
-  dcterms: "http://purl.org/dc/terms/",
+  sp: "http://spinrdf.org/sp#",
+  stato: "http://purl.obolibrary.org/obo/STATO_",
+  taxon: "http://purl.uniprot.org/taxonomy/",
+  time: "http://www.w3.org/2006/time#",
+  uniparc: "http://purl.uniprot.org/uniparc/",
+  uniprot: "http://purl.uniprot.org/uniprot/",
+  up: "http://purl.uniprot.org/core/",
+  vcard: "http://www.w3.org/2006/vcard/ns#",
+  voag: "http://voag.linkedmodel.org/schema/voag#",
+  void: "http://rdfs.org/ns/void#",
+  wd: "http://www.wikidata.org/entity/",
+  wdt: "http://www.wikidata.org/prop/direct/",
+  wikibase: "http://wikiba.se/ontology#",
+  xsd: "http://www.w3.org/2001/XMLSchema#",
 };
 
 /**
@@ -206,99 +350,3 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count WHERE {
 ORDER BY DESC(?qlue_ls_count)
 LIMIT {{ limit }} OFFSET {{ offset }}`,
 };
-
-async function fetchPrefixMap(endpoint: string): Promise<PrefixMap> {
-  const prefixes: PrefixMap = {};
-  try {
-    const url = new URL(endpoint);
-    url.searchParams.set(
-      "query",
-      `PREFIX sh: <http://www.w3.org/ns/shacl#>
-      SELECT DISTINCT ?prefix ?namespace
-      WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix}
-      ORDER BY ?prefix`,
-    );
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      signal: AbortSignal.timeout(5000),
-      headers: { Accept: "application/sparql-results+json" },
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const bindings = (await response.json()).results.bindings;
-    const used = new Set<string>();
-    bindings.forEach((b: any) => {
-      const prefix = b.prefix.value;
-      const namespace = b.namespace.value;
-      if (!used.has(namespace) && !prefixes[prefix]) {
-        prefixes[prefix] = namespace;
-        used.add(namespace);
-      }
-    });
-  } catch (error: any) {
-    console.warn(`Error retrieving prefixes from ${endpoint}:`, error?.message || error);
-  }
-  return Object.keys(prefixes).length === 0 ? fallbackPrefixMap : prefixes;
-}
-
-/** Build a flat qlue-ls BackendConfiguration for an endpoint, fetching prefixes when needed. */
-export async function createBackendConf(endpoint: string): Promise<BackendConfiguration> {
-  const prefixMap = await fetchPrefixMap(endpoint);
-  return {
-    name: endpoint,
-    url: endpoint,
-    prefixMap,
-    queries: completionQueries,
-    default: false,
-  };
-}
-
-// Avoid re-registering the same backend repeatedly
-let lastBackendEndpoint: string | undefined;
-
-/**
- * Register a SPARQL endpoint with the qlue-ls language client and make it the default backend,
- */
-export async function configureQlueLsBackend(languageClient: any, endpoint: string): Promise<void> {
-  if (!languageClient || !endpoint || endpoint === lastBackendEndpoint) return;
-  lastBackendEndpoint = endpoint;
-  try {
-    const backend = await createBackendConf(endpoint);
-    languageClient.sendNotification("qlueLs/addBackend", backend);
-    languageClient.sendNotification("qlueLs/updateDefaultBackend", { backendName: backend.name });
-  } catch (error) {
-    lastBackendEndpoint = undefined; // allow retry
-    console.error("Failed to configure qlue-ls backend for", endpoint, error);
-  }
-}
-
-// Shared code for the demo pages
-
-/** Default SPARQL endpoint used across the demo pages. */
-export const DEMO_ENDPOINT = "https://sparql.dblp.org/sparql";
-
-export type DevTheme = "light" | "dark";
-
-/**
- * Wire the demo page's light/dark switcher: start from the OS preference, and on toggle set the
- * `[data-theme]` attribute (which drives the CSS) and call `onThemeChange` (e.g. editor.setTheme).
- */
-export function setupThemeToggle(onThemeChange?: (theme: DevTheme) => void): DevTheme {
-  let currentTheme: DevTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  document.documentElement.dataset.theme = currentTheme;
-  const button = document.getElementById("darkModeToggle");
-  const render = () => {
-    if (!button) return;
-    button.textContent = currentTheme === "dark" ? "☀️" : "🌙";
-    const title = currentTheme === "dark" ? "Switch to light theme" : "Switch to dark theme";
-    button.setAttribute("title", title);
-    button.setAttribute("aria-label", title);
-  };
-  render();
-  button?.addEventListener("click", () => {
-    currentTheme = currentTheme === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = currentTheme;
-    render();
-    onThemeChange?.(currentTheme);
-  });
-  return currentTheme;
-}

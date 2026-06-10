@@ -30,7 +30,7 @@ function toggleTheme() {
 onMounted(async () => {
   const { default: Yasgui } = await import("@zazuko/yasgui");
   await import("@zazuko/yasgui/style.css");
-  const { createQlueLsWorker, configureQlueLsBackend, DEMO_ENDPOINT } = await import("../qluels");
+  const { createQlueLsWorker, configureQlueLsBackend, DEMO_ENDPOINT, fallbackPrefixMap } = await import("../qluels");
 
   syncTheme(isDark.value);
 
@@ -52,13 +52,14 @@ onMounted(async () => {
   // Yasgui and Yasqe are language-server agnostic: they receive a ready LSP worker and
   // expose the resulting language client. Everything qlue-ls specific lives in ../qluels.
   yasguiInstance = new Yasgui(container.value!, {
-    corsProxy: "",
     requestConfig: { endpoint: DEMO_ENDPOINT },
     yasqe: { theme: isDark.value ? "dark" : "light" },
+    yasr: { prefixes: fallbackPrefixMap },
     languageServerWorker: createQlueLsWorker,
     onEndpointChange: (yg: any, endpoint: string) =>
       configureQlueLsBackend(yg.yasqe?.getLanguageClient(), endpoint),
   });
+  (window as any).__yg = yasguiInstance;
   loading.value = false;
 });
 
