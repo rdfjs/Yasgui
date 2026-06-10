@@ -1,6 +1,7 @@
 import { defineConfig } from "vitepress";
 import wasm from "vite-plugin-wasm";
 import importMetaUrlPlugin from "@codingame/esbuild-import-meta-url-plugin";
+import typedocSidebar from "../api/typedoc-sidebar.json";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -16,10 +17,11 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     logo: "/yasgui.png",
-    // nav: [
-    //   { text: "Demo", link: "/" },
-    //   { text: "API", link: "/docs/api" },
-    // ],
+    nav: [
+      { text: "Editor", link: "/" },
+      { text: "Documentation", link: "/docs/introduction" },
+      { text: "API Reference", link: "/api/" },
+    ],
     sidebar: {
       "/docs/": [
         {
@@ -50,10 +52,17 @@ export default defineConfig({
         {
           text: "Reference",
           items: [
-            { text: "Yasqe API", link: "/docs/api" },
+            { text: "API reference", link: "/api/" },
             { text: "Build from source", link: "/docs/build" },
           ],
         },
+      ],
+      "/api/": [
+        {
+          text: "API Reference",
+          items: [{ text: "Overview", link: "/api/" }],
+        },
+        ...typedocSidebar,
       ],
     },
     socialLinks: [{ icon: "github", link: "https://github.com/rdfjs/Yasgui" }],

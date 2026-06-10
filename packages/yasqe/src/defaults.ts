@@ -62,63 +62,6 @@ SELECT * WHERE {
     // Language server is consumer-provided; no LSP by default (TextMate highlighting still works)
     languageServerWorker: undefined,
     onLanguageClientReady: undefined,
-    // prefixCcApi: (window.location.protocol.indexOf("http") === 0 ? "//" : "http://") + "prefix.cc/popular/all.file.json",
-    // extraKeys: {
-    //   // /**
-    //   //  * Need to use _yasqe:any as function parameter here. Otherwise ts will complain that we're not following
-    //   //  * the codemirror config interface (that specifies the type should be codemirror-editor)
-    //   //  */
-    //   // "Ctrl-Space": function (_yasqe: any) {
-    //   //   // const yasqe: Yasqe = _yasqe;
-    //   //   // yasqe.autocomplete();
-    //   // },
-    //   // "Shift-Ctrl-K": function (_yasqe: any) {
-    //   //   const yasqe: Yasqe = _yasqe;
-    //   //   const lineNumber = yasqe.getDoc().getCursor().line;
-    //   //   if (lineNumber === yasqe.getDoc().lastLine() && lineNumber > 1) {
-    //   //     //delete current line, and the linebreak just before
-    //   //     return yasqe
-    //   //       .getDoc()
-    //   //       .replaceRange(
-    //   //         "",
-    //   //         { ch: yasqe.getDoc().getLine(lineNumber - 1).length, line: lineNumber - 1 },
-    //   //         { ch: yasqe.getDoc().getLine(lineNumber).length, line: lineNumber }
-    //   //       );
-    //   //   } else {
-    //   //     //delete current line including the linebreak after
-    //   //     return yasqe.getDoc().replaceRange("", { ch: 0, line: lineNumber }, { ch: 0, line: lineNumber + 1 });
-    //   //   }
-    //   // },
-    //   // TODO: remove "Ctrl-/": function (_yasqe: any) {
-    //   //   const yasqe: Yasqe = _yasqe;
-    //   //   yasqe.commentLines();
-    //   // },
-    //   // "Shift-Ctrl-D": function (_yasqe: any) {
-    //   //   const yasqe: Yasqe = _yasqe;
-    //   //   yasqe.duplicateLine();
-    //   // },
-    //   // "Shift-Ctrl-F": function (_yasqe: any) {
-    //   //   const yasqe: Yasqe = _yasqe;
-    //   //   yasqe.autoformat();
-    //   // },
-    //   "Ctrl-S": function (_yasqe: any) {
-    //     const yasqe: Yasqe = _yasqe;
-    //     yasqe.saveQuery();
-    //   },
-
-    //   "Cmd-Enter": function (_yasqe: any) {
-    //     const yasqe: Yasqe = _yasqe;
-    //     yasqe.query().catch(() => {}); //catch this to avoid unhandled rejection
-    //   },
-    //   "Ctrl-Enter": function (_yasqe: any) {
-    //     const yasqe: Yasqe = _yasqe;
-    //     yasqe.query().catch(() => {}); //catch this to avoid unhandled rejection
-    //   },
-    //   Esc: function (_yasqe: any) {
-    //     // const yasqe: Yasqe = _yasqe;
-    //     // yasqe.getInputField().blur();
-    //   },
-    // },
   };
   const requestConfig: PlainRequestConfig = {
     queryArgument: undefined, //undefined means: get query argument based on query mode

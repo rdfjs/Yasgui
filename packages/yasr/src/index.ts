@@ -1,3 +1,7 @@
+/**
+ * Yasr · the standalone SPARQL results viewer.
+ * @module Yasr
+ */
 import { EventEmitter } from "events";
 import { merge, filter, mapValues, uniqueId } from "lodash-es";
 import getDefaults from "./defaults";

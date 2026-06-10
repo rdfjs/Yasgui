@@ -128,7 +128,7 @@ export async function startMonacoEditor(
             if (!result) return result;
             const items = Array.isArray(result) ? result : result.items;
             for (const item of items) {
-              const label: any = item.label;
+              const label = item.label;
               if (label && typeof label === "object" && label.detail && !label.detail.startsWith(" ")) {
                 label.detail = " " + label.detail;
               }

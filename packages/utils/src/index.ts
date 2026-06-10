@@ -1,3 +1,7 @@
+/**
+ * Yasgui Utils · shared helpers (storage, DOM, icons).
+ * @module YasguiUtils
+ */
 import DOMPurify from "dompurify";
 export { default as Storage } from "./Storage";
 

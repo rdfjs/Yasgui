@@ -1,3 +1,7 @@
+/**
+ * Yasqe · the standalone Monaco-based SPARQL query editor.
+ * @module Yasqe
+ */
 import { EventEmitter } from "events";
 import { Storage as YStorage } from "@zazuko/yasgui-utils";
 import * as queryString from "query-string";
@@ -6,13 +10,16 @@ import { merge } from "lodash-es";
 
 import * as Sparql from "./sparql";
 import * as imgs from "./imgs";
-
 import getDefaults from "./defaults";
 import { YasqeAjaxConfig } from "./sparql";
 export { sparqlThemeDark, sparqlThemeLight } from "./editor/sparqlTheme";
-export type { SparqlThemeOverrides } from "./editor/editorConfig";
+import { MonacoVscodeApiWrapper } from "monaco-languageclient/vscodeApiWrapper";
+import { LanguageClientWrapper } from "monaco-languageclient/lcwrapper";
 import "./style/yasqe.css";
 import "./style/buttons.css";
+import type { editor } from "monaco-editor";
+import { MonacoLanguageClient } from "monaco-languageclient";
+export type { SparqlThemeOverrides } from "./editor/editorConfig";
 
 export interface Yasqe {
   on(eventName: "query", handler: (instance: Yasqe, req: Request, abortController?: AbortController) => void): this;
@@ -40,25 +47,25 @@ export interface Yasqe {
 
 export class Yasqe extends EventEmitter {
   private static storageNamespace = "triply";
-  public queryValid = true;
-  public lastQueryDuration: number | undefined;
-  private req: Request | undefined;
-  private abortController: AbortController | undefined;
-  private queryStatus: "valid" | "error" | undefined;
-  private queryBtn: HTMLButtonElement | undefined;
-  private resizeWrapper?: HTMLDivElement;
   public rootEl: HTMLDivElement;
   public storage: YStorage = new YStorage(Yasqe.storageNamespace);
   public config: Config;
-  public persistentConfig: PersistentConfig | undefined;
+  public persistentConfig?: PersistentConfig;
+  public queryValid = true;
+  public lastQueryDuration?: number;
+  public languageClientWrapper?: LanguageClientWrapper;
+  public vscodeApi?: MonacoVscodeApiWrapper;
+  public editor?: editor.IStandaloneCodeEditor;
 
-  public languageClientWrapper: any;
-  public apiWrapper: any;
-  public editor: any | undefined;
+  private req?: Request;
+  private abortController?: AbortController;
+  private queryStatus?: "valid" | "error";
+  private queryBtn?: HTMLButtonElement;
+  private resizeWrapper?: HTMLDivElement;
   // Value requested via setValue() before the async editor finished initializing
-  private pendingValue: string | undefined;
+  private pendingValue?: string;
   // Last height requested via setSize()
-  private currentHeight: string | undefined;
+  private currentHeight?: string;
 
   /**
    * Initializes the Monaco editor in the given element.
@@ -82,7 +89,7 @@ export class Yasqe extends EventEmitter {
       );
       this.editor = result.editorApp.getEditor();
       this.languageClientWrapper = result.languageClient;
-      this.apiWrapper = result.apiWrapper;
+      this.vscodeApi = result.apiWrapper;
 
       // Apply any value set via setValue() before the editor finished initializing
       if (this.pendingValue !== undefined) {
@@ -101,6 +108,16 @@ export class Yasqe extends EventEmitter {
         contextMenuOrder: 0,
         run: () => {
           this.query().catch(() => {}); // catch to avoid unhandled rejection
+        },
+      });
+
+      // Save the query on Cmd/Ctrl+S (prevents the browser's "save page" dialog)
+      this.editor?.addAction({
+        id: "yasqe-save-query",
+        label: "Save SPARQL Query",
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+        run: () => {
+          this.saveQuery();
         },
       });
 
@@ -303,7 +320,7 @@ export class Yasqe extends EventEmitter {
    * The active monaco-languageclient `LanguageClient`, or undefined if no language server worker
    * was provided. Use it to send server-specific requests/notifications (yasqe stays LS-agnostic).
    */
-  public getLanguageClient(): any {
+  public getLanguageClient(): MonacoLanguageClient | undefined {
     return this.languageClientWrapper?.getLanguageClient?.();
   }
 
@@ -774,7 +791,7 @@ export class Yasqe extends EventEmitter {
 
   public configToQueryParams(): queryString.ParsedQuery {
     //extend existing link, so first fetch current arguments
-    let urlParams: any = {};
+    let urlParams: queryString.ParsedQuery = {};
     if (window.location.hash.length > 1) urlParams = queryString.parse(window.location.hash);
     urlParams["query"] = this.getValue();
     return urlParams;
@@ -909,7 +926,7 @@ export interface Config {
    * Called once the language client is started, with the `LanguageClient`. Use it for any
    * server-specific setup (e.g. registering a SPARQL endpoint for completions).
    */
-  onLanguageClientReady: ((languageClient: any, yasqe: Yasqe) => void) | undefined;
+  onLanguageClientReady: ((languageClient: MonacoLanguageClient, yasqe: Yasqe) => void) | undefined;
 }
 
 export interface PersistentConfig {

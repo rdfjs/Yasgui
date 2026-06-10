@@ -1,3 +1,7 @@
+/**
+ * Yasgui · the full SPARQL app (editor + results + tab management).
+ * @module Yasgui
+ */
 import { EventEmitter } from "events";
 import { merge, find, isEqual } from "lodash-es";
 import initializeDefaults from "./defaults";

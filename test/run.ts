@@ -11,9 +11,7 @@ import { setup, destroy, closePage, getPage, wait } from "./utils";
 
 declare var window: Window & {
   Yasqe: typeof Yasqe;
-  // TODO: typed as `any` until these tests are rewritten for the Monaco/qlue-ls API.
   yasqe: Yasqe;
-  // yasqe: any;
 };
 
 describe("Yasqe", function () {
@@ -100,7 +98,7 @@ describe("Yasqe", function () {
           `PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> select * {   ?a rdf:b ?c ;     rdf:d "e" ;     rdf:f rdf:g .}`,
         );
         await new Promise((r) => setTimeout(r, 400));
-        await window.yasqe.editor.getAction("editor.action.formatDocument")?.run();
+        await window.yasqe.editor?.getAction("editor.action.formatDocument")?.run();
         await new Promise((r) => setTimeout(r, 1000));
         return window.yasqe.getValue();
       });
@@ -113,7 +111,7 @@ describe("Yasqe", function () {
       const value = await page.evaluate(async () => {
         window.yasqe.setValue(`select (group_concat(str(?a); separator='" "') as ?b) { }`);
         await new Promise((r) => setTimeout(r, 400));
-        await window.yasqe.editor.getAction("editor.action.formatDocument")?.run();
+        await window.yasqe.editor?.getAction("editor.action.formatDocument")?.run();
         await new Promise((r) => setTimeout(r, 1000));
         return window.yasqe.getValue();
       });
@@ -140,10 +138,10 @@ describe("Yasqe", function () {
       await page.evaluate((q: string) => {
         window.yasqe.setValue(q);
         window.yasqe.focus();
-        const m = window.yasqe.editor.getModel();
-        const lastLine = m.getLineCount();
+        const m = window.yasqe.editor?.getModel();
+        const lastLine = m?.getLineCount() ?? 1;
         // Move to end of last line so "foaf:" is typed in SPARQL triple position
-        window.yasqe.editor.setPosition({ lineNumber: lastLine, column: m.getLineMaxColumn(lastLine) });
+        window.yasqe.editor?.setPosition({ lineNumber: lastLine, column: m?.getLineMaxColumn(lastLine) ?? 1 });
       }, query);
       await type("foaf:");
       await page.waitForFunction(

@@ -8,6 +8,7 @@ let yasguiInstance: any = null;
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import { useData } from "vitepress";
+import Yasgui from "@zazuko/yasgui";
 
 // VitePress' own dark-mode switch drives the demo theme.
 const { isDark } = useData();
@@ -56,7 +57,7 @@ onMounted(async () => {
     yasqe: { theme: isDark.value ? "dark" : "light" },
     yasr: { prefixes: fallbackPrefixMap },
     languageServerWorker: createQlueLsWorker,
-    onEndpointChange: (yg: any, endpoint: string) =>
+    onEndpointChange: (yg: Yasgui, endpoint: string) =>
       configureQlueLsBackend(yg.yasqe?.getLanguageClient(), endpoint),
   });
   (window as any).__yg = yasguiInstance;
