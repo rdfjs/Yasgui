@@ -16,6 +16,29 @@ const alias = [
   { find: /^@zazuko\/yasgui-utils$/, replacement: resolve(__dirname, "packages/utils/src/index.ts") },
 ];
 
+// The editor runs monaco-languageclient in `classic` mode so these `extended` service overrides are not used at runtime
+// But codeSplitting:false would still inline every `(await import(pkg)).default` in the bundle (~5 MB of dead code)
+const STUBBED_MONACO_SERVICES = new Set([
+  "@codingame/monaco-vscode-textmate-service-override",
+  "@codingame/monaco-vscode-theme-service-override",
+  "@codingame/monaco-vscode-languages-service-override",
+  "@codingame/monaco-vscode-views-service-override",
+  "@codingame/monaco-vscode-workbench-service-override",
+  "@codingame/monaco-vscode-theme-defaults-default-extension",
+]);
+const STUB_VIRTUAL_ID = "\0monaco-service-stub";
+const monacoServiceStubPlugin = {
+  name: "monaco-service-stub",
+  enforce: "pre" as const,
+  // Exact match only: subpath imports like ".../worker" must resolve normally, not to the stub.
+  resolveId(id: string) {
+    return STUBBED_MONACO_SERVICES.has(id) ? STUB_VIRTUAL_ID : null;
+  },
+  load(id: string) {
+    return id === STUB_VIRTUAL_ID ? "export default () => ({});" : null;
+  },
+};
+
 // Monaco (the @codingame/monaco-vscode-* packages) is ESM-only and loads its workers/wasm via
 // `new URL(..., import.meta.url)`. yasqe pulls it in, so any package depending on yasqe needs the
 // wasm plugin, ES-format workers and the import.meta.url esbuild rewrite (dev) to resolve those assets.
@@ -34,7 +57,7 @@ export default defineConfig({
     rolldownOptions: usesMonaco ? { plugins: [importMetaUrlPlugin] } : undefined,
   },
   worker: {
-    // Monaco + qlue-ls language-server workers are ES modules and load wasm
+    // Monaco and qlue-ls language-server workers are ES modules and load wasm
     format: "es",
     plugins: () => [wasm()],
     // Emit each worker as 1 self-contained file.
@@ -42,7 +65,7 @@ export default defineConfig({
     rolldownOptions: { output: { codeSplitting: false } },
   },
   plugins: [
-    ...(usesMonaco ? [wasm()] : []),
+    ...(usesMonaco ? [wasm(), monacoServiceStubPlugin] : []),
     ...(libPackage
       ? [
           dts({
@@ -63,7 +86,7 @@ export default defineConfig({
         copyPublicDir: false,
         // Monaco/qlue-ls need esnext (top-level await in the wasm glue), other packages keep es2020
         target: usesMonaco ? "esnext" : "es2020",
-        sourcemap: true,
+        sourcemap: false,
         cssCodeSplit: false,
         // esbuild is more lenient than the default lightningcss minifier (CSS uses nesting)
         cssMinify: "esbuild",

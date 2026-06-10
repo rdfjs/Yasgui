@@ -1,23 +1,35 @@
 /**
  * Monaco Editor setup with SPARQL syntax highlighting.
  *
+ * Uses the monaco-languageclient "classic" configuration: no VSCode extension host, no TextMate
+ * engine and no oniguruma wasm. The SPARQL language, a Monarch tokenizer (fallback highlighting)
+ * and the light/dark themes are registered directly through the standalone Monaco API. The
+ * authoritative coloring comes from qlue-ls LSP *semantic tokens*; the Monarch grammar only
+ * provides highlighting before the language server responds.
+ *
  * This module is language-server agnostic: it does NOT create or know about any specific
  * language server. A ready-to-use LSP `Worker` can be injected by the caller; when provided,
  * a monaco-languageclient is wired to it (giving completions, diagnostics, formatting, semantic
  * tokens, etc. — whatever that server supports). When omitted, the editor still works with
- * TextMate-based syntax highlighting only.
+ * Monarch-based syntax highlighting only.
  */
 
 import { configureDefaultWorkerFactory } from "monaco-languageclient/workerFactory";
 import { type EditorAppConfig, EditorApp } from "monaco-languageclient/editorApp";
 import { type MonacoVscodeApiConfig, MonacoVscodeApiWrapper } from "monaco-languageclient/vscodeApiWrapper";
 import { type LanguageClientConfig, LanguageClientWrapper } from "monaco-languageclient/lcwrapper";
-import { Uri } from "monaco-editor";
+import { Uri, editor, languages } from "monaco-editor";
 import { merge } from "lodash-es";
 
-// Import SPARQL theme and grammar for syntax highlighting
+// SPARQL themes (Monaco standalone theme data is derived from these) and classic-mode grammar
 import { sparqlThemeDark, sparqlThemeLight } from "./sparqlTheme";
-import { sparqlTextmateGrammar, sparqlLanguageConfig } from "./sparqlGrammar";
+import { sparqlMonarchLanguage, sparqlLanguageConfiguration, buildSparqlThemeData } from "./sparqlMonarch";
+
+/** Monaco standalone theme names registered for the SPARQL editor. */
+export const SPARQL_THEME_LIGHT = "sparql-light";
+export const SPARQL_THEME_DARK = "sparql-dark";
+
+const LANGUAGE_ID = "sparql";
 
 export interface MonacoEditorResult {
   apiWrapper: MonacoVscodeApiWrapper;
@@ -53,28 +65,21 @@ export async function startMonacoEditor(
   // Built-in themes with any consumer overrides deep-merged on top
   const lightTheme = merge({}, sparqlThemeLight, themeOverrides?.light ?? {});
   const darkTheme = merge({}, sparqlThemeDark, themeOverrides?.dark ?? {});
+  const initialThemeName = theme === "dark" ? SPARQL_THEME_DARK : SPARQL_THEME_LIGHT;
 
-  // Extension files for SPARQL language support
-  const extensionFilesOrContents = new Map<string, string | URL>();
-  extensionFilesOrContents.set("/sparql-configuration.json", JSON.stringify(sparqlLanguageConfig));
-  extensionFilesOrContents.set("/sparql-grammar.json", JSON.stringify(sparqlTextmateGrammar));
-  extensionFilesOrContents.set("/sparql-theme-light.json", JSON.stringify(lightTheme));
-  extensionFilesOrContents.set("/sparql-theme-dark.json", JSON.stringify(darkTheme));
-
-  // MonacoVscodeApiConfig
+  // Classic monaco-vscode api config: no extension host, no TextMate, no theme service.
   const vscodeApiConfig: MonacoVscodeApiConfig = {
-    $type: "extended",
+    $type: "classic",
     viewsConfig: {
       $type: "EditorService",
     },
     userConfiguration: {
       json: JSON.stringify({
-        "workbench.colorTheme": theme === "dark" ? "SPARQL Dark Theme" : "SPARQL Light Theme",
         "editor.guides.bracketPairsHorizontal": "active",
         "editor.lightbulb.enabled": "On",
         "editor.wordBasedSuggestions": "off",
         "editor.experimental.asyncTokenization": true,
-        // Use language-server semantic tokens (parser-based) on top of the TextMate grammar
+        // Use language-server semantic tokens (parser-based) on top of the Monarch fallback grammar
         "editor.semanticHighlighting.enabled": true,
         "editor.tabSize": 2,
         "editor.insertSpaces": true,
@@ -85,48 +90,12 @@ export async function startMonacoEditor(
       }),
     },
     monacoWorkerFactory: configureDefaultWorkerFactory,
-    extensions: [
-      {
-        config: {
-          name: "sparql-language",
-          publisher: "Ioannis Nezis",
-          version: "1.0.0",
-          engines: { vscode: "*" },
-          contributes: {
-            languages: [
-              {
-                id: "sparql",
-                extensions: [".rq", ".sparql"],
-                aliases: ["sparql", "SPARQL"],
-                configuration: "/sparql-configuration.json",
-              },
-            ],
-            themes: [
-              {
-                id: "SPARQL Light Theme",
-                label: "SPARQL Light Theme",
-                uiTheme: "vs",
-                path: "./sparql-theme-light.json",
-              },
-              {
-                id: "SPARQL Dark Theme",
-                label: "SPARQL Dark Theme",
-                uiTheme: "vs-dark",
-                path: "./sparql-theme-dark.json",
-              },
-            ],
-            grammars: [
-              {
-                language: "sparql",
-                scopeName: "source.sparql",
-                path: "/sparql-grammar.json",
-              },
-            ],
-          },
-        },
-        filesOrContents: extensionFilesOrContents,
-      },
-    ],
+    // Skip the extension-host services entirely (classic mode registers language/grammar/theme
+    // through the standalone API), which drops the extensionHost worker + extensions service.
+    advanced: {
+      loadExtensionServices: false,
+      // enforceSemanticHighlighting: true,
+    },
   };
 
   // Create and start the monaco-vscode api wrapper
@@ -137,9 +106,9 @@ export async function startMonacoEditor(
   let lcWrapper: LanguageClientWrapper | undefined;
   if (lsWorker) {
     const languageClientConfig: LanguageClientConfig = {
-      languageId: "sparql",
+      languageId: LANGUAGE_ID,
       clientOptions: {
-        documentSelector: [{ language: "sparql" }],
+        documentSelector: [{ language: LANGUAGE_ID }],
         workspaceFolder: {
           index: 0,
           name: "workspace",
@@ -215,7 +184,7 @@ export async function startMonacoEditor(
     selectionHighlight: true, // was highlightSelectionMatches: { showToken: /\w/ }
   } as const;
 
-  // EditorAppConfig
+  // EditorAppConfig: classic mode registers the SPARQL language + Monarch grammar + initial theme
   const editorAppConfig: EditorAppConfig = {
     codeResources: {
       modified: {
@@ -224,11 +193,30 @@ export async function startMonacoEditor(
       },
     },
     editorOptions: merge({}, defaultEditorOptions, editorOptions ?? {}),
+    languageDef: {
+      languageExtensionConfig: {
+        id: LANGUAGE_ID,
+        extensions: [".rq", ".sparql"],
+        aliases: ["SPARQL", "sparql"],
+      },
+      monarchLanguage: sparqlMonarchLanguage,
+      theme: {
+        name: initialThemeName,
+        data: buildSparqlThemeData(theme === "dark" ? darkTheme : lightTheme),
+      },
+    },
   };
 
-  // Create and start the editor app
+  // Create and start the editor app (registers language, Monarch grammar and the initial theme)
   const editorApp = new EditorApp(editorAppConfig);
   await editorApp.start(container);
+
+  // Register both themes + the language configuration (brackets/comments/auto-close) so theme
+  // switching at runtime works and bracket matching/auto-closing behave correctly.
+  editor.defineTheme(SPARQL_THEME_LIGHT, buildSparqlThemeData(lightTheme));
+  editor.defineTheme(SPARQL_THEME_DARK, buildSparqlThemeData(darkTheme));
+  editor.setTheme(initialThemeName);
+  languages.setLanguageConfiguration(LANGUAGE_ID, sparqlLanguageConfiguration);
 
   return {
     apiWrapper,

@@ -313,12 +313,11 @@ export class Yasqe extends EventEmitter {
    */
   public async setTheme(theme: "light" | "dark"): Promise<void> {
     document.documentElement.dataset.theme = theme;
-    // Use the theme names matching the extensions defined in editorConfig.ts
-    const themeName = theme === "dark" ? "SPARQL Dark Theme" : "SPARQL Light Theme";
-    // Use VS Code API to change the theme at runtime (monaco-languageclient approach)
+    // Classic mode: switch theme via the standalone Monaco API (themes registered in editorConfig.ts)
     try {
-      const vscode = await import("vscode");
-      await vscode.workspace.getConfiguration("workbench").update("colorTheme", themeName, true);
+      const { SPARQL_THEME_DARK, SPARQL_THEME_LIGHT } = await import("./editor/editorConfig");
+      const monaco = await import("monaco-editor");
+      monaco.editor.setTheme(theme === "dark" ? SPARQL_THEME_DARK : SPARQL_THEME_LIGHT);
     } catch (error) {
       console.error("Failed to switch theme:", error);
     }
