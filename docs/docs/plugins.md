@@ -37,7 +37,25 @@ SELECT * WHERE { ?s ?p ?o } LIMIT 10
 [`yasgui-geo-tg`](https://github.com/Thib-G/yasgui-geo-tg)
 :::
 
-Displays geographic results on an interactive Leaflet map. It reads WKT (`geo:wktLiteral`), GeoJSON, GML and GeoHash literals, and also auto-detects `?lat` / `?lon` numeric columns without WKT. Includes multiple basemaps, drawing tools that generate spatial SPARQL filters, a time slider for temporal data, and export to GeoJSON, KML, CSV and PNG.
+Displays geographic results on an interactive [Leaflet](https://leafletjs.com/) map. It reads WKT (`geo:wktLiteral`), GeoJSON, GML and GeoHash literals, and also auto-detects `?lat` / `?lon` numeric columns without WKT. Includes multiple basemaps, drawing tools that generate spatial SPARQL filters, a time slider for temporal data, and export to GeoJSON, KML, CSV and PNG.
+
+Integrate it:
+
+```ts
+import Yasgui from '@rdfjs/yasgui';
+import GeoPlugin from 'yasgui-geo-tg';
+
+Yasgui.Yasr.registerPlugin('geo', GeoPlugin);
+
+const yasgui = new Yasgui(document.getElementById('yasgui'), {
+  yasr: {
+    pluginOrder: ['table', 'response', 'geo'],
+    defaultPlugin: 'geo',
+  },
+});
+```
+
+Examples queries:
 
 ```sparql
 PREFIX geo: <http://www.opengis.net/ont/geosparql#>
@@ -68,6 +86,23 @@ SELECT ?feature ?wkt WHERE {
 :::
 
 Renders `CONSTRUCT` / `DESCRIBE` results as an interactive node-edge graph with a force-directed layout. URIs, literals and blank nodes are color-coded, double-click a node to expand it with a `DESCRIBE` query, and use compact mode to hide literals and class nodes.
+
+Integrate it:
+
+```ts
+import Yasgui from '@rdfjs/yasgui';
+import GraphPlugin from '@matdata/yasgui-graph-plugin';
+
+Yasgui.Yasr.registerPlugin('graph', GraphPlugin);
+
+const yasgui = new Yasgui(document.getElementById('yasgui'), {
+  yasr: {
+    pluginOrder: ['table', 'response', 'graph'],
+  },
+});
+```
+
+Example query:
 
 ```sparql
 PREFIX ex: <http://example.org/>

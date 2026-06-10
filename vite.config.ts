@@ -99,6 +99,7 @@ export default defineConfig({
             index: resolve(__dirname, "dev/index.html"),
             yasqe: resolve(__dirname, "dev/yasqe.html"),
             yasr: resolve(__dirname, "dev/yasr.html"),
+            swls: resolve(__dirname, "dev/swls.html"),
           },
         },
       },

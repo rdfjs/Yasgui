@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="/yasgui.png" />
     <link rel="stylesheet" href="./style.css" />
-    <title>YASGUI</title>
+    <title>Yasgui with SWLS</title>
   </head>
   <body>
     <div class="navBar">
@@ -24,14 +24,15 @@
     <script type="module">
       import Yasgui from "@zazuko/yasgui";
       import { setupThemeToggle, createQlueLsWorker, configureQlueLsBackend, DEMO_ENDPOINT } from "./qluels";
-      // yasgui/yasqe are LS-agnostic; to switch to another SPARQL language server only ./qluels changes.
+      // import { createSwlsWorker } from "./swls";
+      // TODO: implement with swls
       window.onpageshow = function () {
         const theme = setupThemeToggle((t) => window.yasgui.yasqe?.setTheme(t));
         window.yasgui = new Yasgui(document.getElementById("yasgui"), {
           requestConfig: { endpoint: DEMO_ENDPOINT },
           yasqe: { theme },
-          languageServerWorker: createQlueLsWorker,
-          onEndpointChange: (yasgui, endpoint) => configureQlueLsBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
+          // languageServerWorker: createSwlsWorker,
+          // onEndpointChange: (yasgui, endpoint) => configureQlueLsBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
         });
       };
     </script>
