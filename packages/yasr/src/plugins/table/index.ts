@@ -60,7 +60,7 @@ export default class Table implements Plugin<PluginConfig> {
         onResize: () => {};
       }
     | undefined;
-  public helpReference = "https://docs.triply.cc/yasgui/#table";
+  public helpReference = "https://vemonet.github.io/Yasgui/docs/plugins#table";
   public label = "Table";
   public priority = 10;
   public getIcon() {

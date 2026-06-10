@@ -16,14 +16,7 @@ const yasgui = new Yasgui(document.getElementById("yasgui")!, {
 });
 ```
 
-## One shared editor
-
-Yasgui uses **one shared Monaco editor** across all tabs (Monaco can only be initialized once per
-page) and swaps its content and endpoint on tab switch.
-
-- `yasgui.yasqe` is that shared [Yasqe](./yasqe) instance.
-- `yasgui.yasqe.getLanguageClient()` returns the underlying `monaco-languageclient` so you can send
-  any LSP request.
+`yasgui.yasqe.getLanguageClient()` returns the underlying `monaco-languageclient` so you can send any LSP request.
 
 ## Configuration
 
@@ -36,16 +29,6 @@ page) and swaps its content and endpoint on tab switch.
 | `yasr` | `Partial<Yasr config>` | result-viewer config |
 | `corsProxy` | `string` | optional CORS proxy URL |
 | `persistenceId` | `string \| fn \| null` | localStorage namespace; `null` disables persistence |
-
-## The endpoint selector
-
-Yasgui ships with a catalogue of popular public SPARQL endpoints in the endpoint dropdown,
-including DBpedia, Wikidata, UniProt, the QLever services and many life-science datasets. Users can
-type any other endpoint URL directly.
-
-When the active endpoint changes (on load, tab switch, or when the user edits the endpoint),
-`onEndpointChange` fires once for the whole app. Use it to point the language server at the active
-endpoint, as shown above.
 
 ## CORS
 

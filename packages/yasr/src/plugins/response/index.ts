@@ -32,7 +32,7 @@ export default class Response implements Plugin<PluginConfig> {
   private yasr: Yasr;
   label = "Response";
   priority = 2;
-  helpReference = "https://rdfjs.github.io/Yasgui/docs/introduction";
+  helpReference = "https://vemonet.github.io/Yasgui/docs/plugins#response";
   private config: DeepReadonly<PluginConfig>;
   private overLay: HTMLDivElement | undefined;
   private cm: EditorView | undefined;
