@@ -1,5 +1,5 @@
 /**
- * Yasgui · the full SPARQL app (editor + results + tab management).
+ * Yasgui · the full SPARQL app (editor + results + endpoint/tab management).
  * @module Yasgui
  */
 import { EventEmitter } from "events";
@@ -14,6 +14,7 @@ import TabElements from "./TabElements";
 import { default as Yasqe, PartialConfig as YasqeConfig, RequestConfig } from "@zazuko/yasqe";
 import { default as Yasr, Config as YasrConfig } from "@zazuko/yasr";
 import { addClass, removeClass } from "@zazuko/yasgui-utils";
+import type { DeepPartial } from "@zazuko/yasgui-utils";
 import "./index.scss";
 import "./darkmode.css";
 import "@zazuko/yasr/src/scss/global.scss";
@@ -62,9 +63,7 @@ export interface Config<EndpointObject extends CatalogueItem = CatalogueItem> {
    */
   onEndpointChange?: (yasgui: Yasgui, endpoint: string) => void;
 }
-export type PartialConfig = {
-  [P in keyof Config]?: Config[P] extends object ? Partial<Config[P]> : Config[P];
-};
+export type PartialConfig = DeepPartial<Config>;
 
 export type TabJson = PersistedTabJson;
 
@@ -199,12 +198,7 @@ export class Yasgui extends EventEmitter {
       // Once the language client is ready, notify for the active tab endpoint
       onLanguageClientReady: (languageClient, yasqe) => {
         // Yasgui overwrites the consumer defined yasqe.onLanguageClientReady, so chain back to it
-        // `as` needed because PartialConfig wraps function-valued keys in Partial<>, dropping their call signature.
-        (
-          this.config.yasqe?.onLanguageClientReady as
-            | ((lc: typeof languageClient, yq: typeof yasqe) => void)
-            | undefined
-        )?.(languageClient, yasqe);
+        this.config.yasqe?.onLanguageClientReady?.(languageClient, yasqe);
         const endpoint = this.getActiveTab()?.getEndpoint();
         if (endpoint) this.emitEndpointChange(endpoint);
       },
@@ -260,17 +254,14 @@ export class Yasgui extends EventEmitter {
     this.updateEditorsContent(tab);
   }
 
-  /** Load a tab's query, request config and endpoint backend into the shared editor. */
+  /** Load a tab query, request config and endpoint backend into the shared editor. */
   public updateEditorsContent(tab: Tab) {
     if (!this.yasqe) return;
     const tabConfig = tab.getPersistedJson();
     this.yasqe.setValue(tabConfig.yasqe.value);
-    // Use this tab's persisted height, falling back to the default so a tab without a saved
-    // height doesn't inherit the previously shown tab's height.
     this.yasqe.setSize(tabConfig.yasqe.editorHeight || this.yasqe.config.editorHeight);
     this.yasqe.config.requestConfig = () => tab.getProcessedRequestConfig() as any;
     this.yasqe.config.createShareableLink = () => tab.getShareableLink();
-    // The active endpoint is now this tab's endpoint
     this.emitEndpointChange(tab.getEndpoint());
   }
 

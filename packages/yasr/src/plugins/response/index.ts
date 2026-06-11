@@ -10,7 +10,7 @@ import { foldGutter, syntaxHighlighting, defaultHighlightStyle } from "@codemirr
 import { json } from "@codemirror/lang-json";
 import { drawSvgStringAsElement, addClass, removeClass, drawFontAwesomeIconAsSvg } from "@zazuko/yasgui-utils";
 import * as faAlignIcon from "@fortawesome/free-solid-svg-icons/faAlignLeft";
-import { DeepReadonly } from "ts-essentials";
+import type { DeepReadonly } from "@zazuko/yasgui-utils";
 import * as imgs from "../../imgs";
 
 const responseTheme = EditorView.theme({

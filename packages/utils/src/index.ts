@@ -4,6 +4,7 @@
  */
 import DOMPurify from "dompurify";
 export { default as Storage } from "./Storage";
+export type { DeepPartial, DeepReadonly } from "./types";
 
 const { sanitize } = DOMPurify;
 

@@ -12,7 +12,7 @@ import type { Plugin, DownloadInfo } from "../";
 import Yasr from "../../";
 import { drawSvgStringAsElement, drawFontAwesomeIconAsSvg, addClass, removeClass } from "@zazuko/yasgui-utils";
 import * as faTableIcon from "@fortawesome/free-solid-svg-icons/faTable";
-import { DeepReadonly } from "ts-essentials";
+import type { DeepReadonly } from "@zazuko/yasgui-utils";
 import { cloneDeep } from "lodash-es";
 import sanitize from "../../helpers/sanitize";
 import type { Api, ConfigColumns, CellMetaSettings, Config } from "datatables.net";

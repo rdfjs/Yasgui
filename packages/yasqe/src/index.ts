@@ -7,6 +7,7 @@ import { Storage as YStorage } from "@zazuko/yasgui-utils";
 import * as queryString from "query-string";
 import { drawSvgStringAsElement, addClass, removeClass } from "@zazuko/yasgui-utils";
 import { merge } from "lodash-es";
+import type { DeepPartial } from "@zazuko/yasgui-utils";
 
 import * as Sparql from "./sparql";
 import * as imgs from "./imgs";
@@ -873,9 +874,7 @@ export interface RequestConfig<Y> {
 export type PlainRequestConfig = {
   [K in keyof RequestConfig<any>]: Exclude<RequestConfig<any>[K], Function>;
 };
-export type PartialConfig = {
-  [P in keyof Config]?: Config[P] extends object ? Partial<Config[P]> : Config[P];
-};
+export type PartialConfig = DeepPartial<Config>;
 export interface Config {
   /** Initial query value. */
   value: string;
