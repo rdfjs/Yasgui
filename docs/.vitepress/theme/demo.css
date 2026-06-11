@@ -6,6 +6,18 @@
 }
 .yasgui-home .VPContent {
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+/* Fill the content chain down to the demo so its theme bar can sit at the bottom */
+.yasgui-home .VPPage,
+.yasgui-home .VPPage > div,
+.yasgui-home .VPPage > div > div,
+.yasgui-home .yasgui-home-demo {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 .yasgui-home .VPPage {
   padding: 0;
