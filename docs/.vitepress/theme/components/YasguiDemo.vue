@@ -1,8 +1,6 @@
 <script lang="ts">
-// Module-level singleton: lives outside setup() so it survives SPA navigations.
-// The monaco-vscode API can only be initialized once per page load, destroying and
-// recreating Yasgui on navigation would throw on the second visit.
-let yasguiInstance: any = null;
+// Module-level singleton: lives outside setup() so it survives SPA navigations
+let yasgui: any = null;
 </script>
 
 <script setup lang="ts">
@@ -10,7 +8,7 @@ import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import { useData } from "vitepress";
 import Yasgui from "@zazuko/yasgui";
 
-// VitePress' own dark-mode switch drives the demo theme.
+// VitePress dark-mode switch
 const { isDark } = useData();
 const container = ref<HTMLElement | null>(null);
 const loading = ref(true);
@@ -19,7 +17,7 @@ function syncTheme(dark: boolean) {
   const theme = dark ? "dark" : "light";
   // The surrounding chrome CSS keys off [data-theme] on <html>.
   document.documentElement.dataset.theme = theme;
-  yasguiInstance?.yasqe?.setTheme?.(theme);
+  yasgui?.yasqe?.setTheme?.(theme);
 }
 
 // isDark is a writable (useDark-backed) ref; flipping it toggles the .dark class,
@@ -31,13 +29,14 @@ function toggleTheme() {
 onMounted(async () => {
   const { default: Yasgui } = await import("@zazuko/yasgui");
   await import("@zazuko/yasgui/style.css");
-  const { createQlueLsWorker, configureQlueLsBackend, DEMO_ENDPOINT, fallbackPrefixMap } = await import("../qluels");
+  const { createQlueLsWorker, configureQlueLsBackend, configureQlueLsSettings, DEMO_ENDPOINT, fallbackPrefixMap } =
+    await import("../qluels");
 
   syncTheme(isDark.value);
 
-  if (yasguiInstance) {
+  if (yasgui) {
     // Re-attach the existing rootEl instead of re-initializing Monaco.
-    container.value!.appendChild(yasguiInstance.rootEl);
+    container.value!.appendChild(yasgui.rootEl);
     loading.value = false;
     return;
   }
@@ -52,15 +51,18 @@ onMounted(async () => {
 
   // Yasgui and Yasqe are language-server agnostic: they receive a ready LSP worker and
   // expose the resulting language client. Everything qlue-ls specific lives in ../qluels.
-  yasguiInstance = new Yasgui(container.value!, {
+  yasgui = new Yasgui(container.value!, {
     requestConfig: { endpoint: DEMO_ENDPOINT },
-    yasqe: { theme: isDark.value ? "dark" : "light" },
+    yasqe: {
+      theme: isDark.value ? "dark" : "light",
+      onLanguageClientReady: (languageClient) => configureQlueLsSettings(languageClient),
+    },
     yasr: { prefixes: fallbackPrefixMap },
     languageServerWorker: createQlueLsWorker,
     onEndpointChange: (yg: Yasgui, endpoint: string) =>
       configureQlueLsBackend(yg.yasqe?.getLanguageClient(), endpoint),
   });
-  (window as any).__yg = yasguiInstance;
+  (window as any).__yg = yasgui;
   loading.value = false;
 });
 
@@ -68,7 +70,7 @@ watch(isDark, (dark) => syncTheme(dark));
 
 onBeforeUnmount(() => {
   // Detach from the DOM but keep the instance alive for the next visit.
-  yasguiInstance?.rootEl?.remove();
+  yasgui?.rootEl?.remove();
 });
 </script>
 

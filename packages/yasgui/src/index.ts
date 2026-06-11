@@ -195,10 +195,16 @@ export class Yasgui extends EventEmitter {
       consumeShareLink: null, // handled by the parent yasgui instance, not yasqe
       createShareableLink: () => this.getActiveTab()?.getShareableLink() || "",
       requestConfig: () => (this.getActiveTab()?.getProcessedRequestConfig() ?? {}) as any,
-      // Forward the consumer-provided language server to the shared editor
       languageServerWorker: this.config.languageServerWorker,
       // Once the language client is ready, notify for the active tab endpoint
-      onLanguageClientReady: () => {
+      onLanguageClientReady: (languageClient, yasqe) => {
+        // Yasgui overwrites the consumer defined yasqe.onLanguageClientReady, so chain back to it
+        // `as` needed because PartialConfig wraps function-valued keys in Partial<>, dropping their call signature.
+        (
+          this.config.yasqe?.onLanguageClientReady as
+            | ((lc: typeof languageClient, yq: typeof yasqe) => void)
+            | undefined
+        )?.(languageClient, yasqe);
         const endpoint = this.getActiveTab()?.getEndpoint();
         if (endpoint) this.emitEndpointChange(endpoint);
       },

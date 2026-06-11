@@ -8,6 +8,7 @@
  * language server (e.g. SemanticWebLanguageServer/swls) only touches this file.
  */
 import QlueLsWorker from "./qluels.worker?worker";
+import type { MonacoLanguageClient } from "monaco-languageclient";
 
 export type SparqlEngine = "QLever" | "GraphDB" | "Virtuoso" | "MillenniumDB" | "Blazegraph" | "Jena";
 
@@ -54,6 +55,9 @@ export function createQlueLsWorker(): Promise<Worker> {
   });
 }
 
+/**
+ * Fetch a prefix map from the given SPARQL endpoint by querying for prefixes declared with SHACL
+ */
 async function fetchPrefixMap(endpoint: string): Promise<PrefixMap> {
   const prefixes: PrefixMap = {};
   try {
@@ -97,6 +101,13 @@ export async function createBackendConf(endpoint: string): Promise<BackendConfig
     queries: completionQueries,
     default: false,
   };
+}
+
+/**
+ * Update qlue-ls settings
+ */
+export function configureQlueLsSettings(languageClient: MonacoLanguageClient): void {
+  languageClient.sendNotification("qlueLs/changeSettings", qlueLsSettings);
 }
 
 // Avoid re-registering the same backend repeatedly
@@ -149,6 +160,40 @@ export function setupThemeToggle(onThemeChange?: (theme: DevTheme) => void): Dev
   });
   return currentTheme;
 }
+
+// Qlue-ls settings
+
+/**
+ * qlue-ls server settings pushed once the language client is ready. Mirrors the keys the qlue-ls
+ * VS Code extension reads from its `config.get(...)` calls; here we send the demo defaults.
+ */
+export const qlueLsSettings = {
+  format: {
+    alignPredicates: false,
+    alignPrefixes: false,
+    separatePrologue: true,
+    capitalizeKeywords: true,
+    insertSpaces: true,
+    tabSize: 2,
+    whereNewLine: false,
+    filterSameLine: true,
+    lineLength: 120,
+    contractTriples: true,
+    keepEmptyLines: false,
+  },
+  completion: {
+    timeoutMs: 10000,
+    resultSizeLimit: 50,
+    subjectCompletionTriggerLength: 3,
+    objectCompletionSuffix: true,
+    variableCompletionLimit: 10,
+    sameSubjectSemicolon: true,
+  },
+  prefixes: {
+    addMissing: true,
+    removeUnused: false,
+  },
+};
 
 /** Minimal fallback prefixes used when an endpoint exposes none. */
 export const fallbackPrefixMap: PrefixMap = {
