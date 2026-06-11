@@ -5,18 +5,26 @@ a **SPARQL language server (LSP)** running in a Web Worker. Yasqe and Yasgui are
 **agnostic**: you pass them a ready LSP `Worker` and they wire a `monaco-languageclient` to it.
 
 The recommended server is [**qlue-ls**](https://github.com/IoannisNezis/Qlue-ls), a fast WASM SPARQL
-language server.
+language server. Yasqe ships the qlue-ls plumbing (settings, backend/endpoint registration, prefix
+discovery, completion-query templates and types) under the `qlueLs` namespace, so the only thing you
+write yourself is the WASM worker:
+
+```ts
+import { qlueLs } from "@zazuko/yasqe"; // also re-exported from "@zazuko/yasgui"
+```
 
 ## The worker
 
-qlue-ls resolves completions against a registered **backend**. Register one and make it the default
-whenever the active endpoint changes
+qlue-ls is distributed as a WASM module; you wrap it in a Web Worker and resolve a factory once it
+signals it is ready. This is the only qlue-ls specific code you maintain (it depends on the `qlue-ls`
+package); everything else comes from the `qlueLs` helpers.
 
 :::code-group
 
 ```ts [qlue-ls.ts]
 import QlueLsWorker from "./qlue-ls.worker?worker";
 
+/** Create a qlue-ls worker and resolve once its WASM is ready. */
 export function createQlueLsWorker(): Promise<Worker> {
   return new Promise((resolve) => {
     const worker = new QlueLsWorker({ name: "qlue-ls" });
@@ -24,16 +32,6 @@ export function createQlueLsWorker(): Promise<Worker> {
       if (e.data?.type === "ready") resolve(worker);
     };
   });
-}
-
-let last: string | undefined;
-export async function configureQlueLsBackend(languageClient: any, endpoint: string) {
-  if (!languageClient || !endpoint || endpoint === last) return;
-  last = endpoint;
-  const backend = await createBackendConf(endpoint);
-  // qlueLs/addBackend and qlueLs/updateDefaultBackend are LSP notifications (no response)
-  languageClient.sendNotification("qlueLs/addBackend", backend);
-  languageClient.sendNotification("qlueLs/updateDefaultBackend", { backendName: backend.name });
 }
 ```
 
@@ -71,9 +69,70 @@ export {};
 
 :::
 
+## Hooking it up
+
+Pass the worker factory as `languageServerWorker`, then use the `qlueLs` helpers to push settings and
+register the active endpoint as the default backend (so completions resolve against it).
+
+- With **Yasgui**, register backends from `onEndpointChange` (fires on load, tab switch and endpoint
+  edits, once for the whole app):
+
+  ```ts [main.ts]
+  import Yasgui, { qlueLs } from "@zazuko/yasgui";
+  import { createQlueLsWorker } from "./qlue-ls";
+
+  new Yasgui(el, {
+    languageServerWorker: createQlueLsWorker,
+    yasqe: {
+      onLanguageClientReady: (languageClient) => qlueLs.configureSettings(languageClient),
+    },
+    onEndpointChange: (yasgui, endpoint) =>
+      qlueLs.configureBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
+  });
+  ```
+
+- With **Yasqe**, do both from `onLanguageClientReady`:
+
+  ```ts [main.ts]
+  import Yasqe, { qlueLs } from "@zazuko/yasqe";
+  import { createQlueLsWorker } from "./qlue-ls";
+
+  new Yasqe(el, {
+    languageServerWorker: createQlueLsWorker,
+    onLanguageClientReady: (lc) => {
+      qlueLs.configureSettings(lc);
+      qlueLs.configureBackend(lc, "https://sparql.dblp.org/sparql");
+    },
+  });
+  ```
+
+`qlueLs.configureBackend` is safe to call repeatedly (it skips re-registering the same endpoint).
+`yasqe.getLanguageClient()` returns the underlying `monaco-languageclient`, so you can also send any
+other LSP request or custom notification yourself.
+
+## The `qlueLs` helpers
+
+| export | what it does |
+| --- | --- |
+| `configureBackend(client, endpoint, options?)` | register `endpoint` as the **default** backend so completions resolve against it. Fetches the endpoint's prefixes when none are passed, and uses `defaultCompletionQueries` for term completion. |
+| `configureSettings(client, settings?)` | push server settings (formatting, completion, prefix handling). Defaults to `defaultSettings`. |
+| `createBackendConf(endpoint, options?)` | build a `BackendConfiguration` (fetching prefixes when not provided) without sending it. |
+| `fetchPrefixMap(endpoint)` | query the endpoint for `sh:prefix` / `sh:namespace` declarations, falling back to `fallbackPrefixMap`. |
+| `defaultSettings`, `fallbackPrefixMap`, `defaultCompletionQueries` | sensible defaults you can spread/override. |
+
+`BackendOptions` lets you override pieces without rebuilding the config by hand:
+
+```ts
+qlueLs.configureBackend(lc, endpoint, {
+  prefixMap: { rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#", ...qlueLs.fallbackPrefixMap },
+  queries: qlueLs.defaultCompletionQueries, // or your own CompletionTemplate map
+  engine: "QLever",
+});
+```
+
 ### The backend object
 
-The qlue-ls `BackendConfiguration` is flat and camelCase:
+The qlue-ls `BackendConfiguration` (what `createBackendConf` builds) is flat and camelCase:
 
 | field | required | meaning |
 | --- | --- | --- |
@@ -84,60 +143,21 @@ The qlue-ls `BackendConfiguration` is flat and camelCase:
 | `queries` | — | completion-query templates, keyed by qlue-ls `CompletionTemplate` (`subjectCompletion`, `predicateCompletionContextSensitive`, `objectCompletionContextSensitive`, …). Needed for **term** completion. An empty object still gives prefix/keyword completion. |
 | `engine`, `requestMethod`, `healthCheckUrl` | — | optional |
 
-```ts
-function createBackendConf(endpoint: string) {
-  return {
-    name: endpoint,
-    url: endpoint,
-    default: false,
-    prefixMap: {
-      rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-      rdfs: "http://www.w3.org/2000/01/rdf-schema#",
-    },
-    queries: {}, // add CompletionTemplate entries for subject/predicate/object completion
-  };
-}
-```
-
 ::: tip Auto-discovering prefixes
-Many endpoints expose their prefixes via `sh:namespace` / `sh:prefix`. You can query that at
-backend-creation time and fall back to a minimal prefix map when none are returned. The live demo's
-`qluels.ts` does exactly this.
+`configureBackend` / `createBackendConf` call `fetchPrefixMap` for you when you don't pass a
+`prefixMap`: many endpoints expose their prefixes via `sh:namespace` / `sh:prefix`, and `qlueLs`
+falls back to `fallbackPrefixMap` (a broad set of common vocab prefixes) when none are returned.
 :::
-
-## Hooking it up
-
-- With **Yasgui**, register backends from `onEndpointChange` (fires on load, tab switch and endpoint
-  edits, once for the whole app):
-
-  ```ts [main.ts]
-  new Yasgui(el, {
-    languageServerWorker: createQlueLsWorker,
-    onEndpointChange: (yasgui, endpoint) =>
-      configureQlueLsBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
-  });
-  ```
-
-- With **Yasqe**, use `onLanguageClientReady`:
-
-  ```ts [main.ts]
-  new Yasqe(el, {
-    languageServerWorker: createQlueLsWorker,
-    onLanguageClientReady: (lc) => configureQlueLsBackend(lc, endpoint),
-  });
-  ```
-
-`yasqe.getLanguageClient()` returns the underlying `monaco-languageclient` so you can send any LSP
-request or custom notification.
 
 ## Using a different language server
 
-Yasqe and Yasgui only need a ready LSP `Worker`. To use, for example,
-[swls](https://github.com/SemanticWebLanguageServer/swls) instead of qlue-ls:
+Yasqe and Yasgui only need a ready LSP `Worker`. The `qlueLs` helpers are a convenience for qlue-ls;
+they are not required. To use, for example,
+[swls](https://github.com/SemanticWebLanguageServer/swls) instead:
 
 1. Replace `qlue-ls.worker.ts` / `qlue-ls.ts` with that server's worker and connection.
 2. Pass its worker factory as `languageServerWorker`.
 3. In `onEndpointChange` / `onLanguageClientReady`, send whatever that server needs to target an
-   endpoint (its own custom requests).
+   endpoint (its own custom requests) via `getLanguageClient()`.
 
 No changes to the `@zazuko/*` packages are required.

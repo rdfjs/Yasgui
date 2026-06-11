@@ -4,16 +4,19 @@
 client. Use it when you want only the editor, without tabs or the result viewer.
 
 ```ts
-import Yasqe from "@zazuko/yasqe";
+import Yasqe, { qlueLs } from "@zazuko/yasqe";
 import "@zazuko/yasqe/style.css";
-import { createQlueLsWorker, configureQlueLsBackend } from "./qlue-ls";
+import { createQlueLsWorker } from "./qlue-ls";
 
+const endpoint = "https://sparql.dblp.org/sparql";
 const yasqe = new Yasqe(document.getElementById("yasqe")!, {
   value: "SELECT * WHERE { ?s ?p ?o } LIMIT 10",
-  requestConfig: { endpoint: "https://sparql.dblp.org/sparql" },
+  requestConfig: { endpoint },
   languageServerWorker: createQlueLsWorker,
-  onLanguageClientReady: (languageClient) =>
-    configureQlueLsBackend(languageClient, "https://sparql.dblp.org/sparql"),
+  onLanguageClientReady: (languageClient) => {
+    qlueLs.configureSettings(languageClient);
+    qlueLs.configureBackend(languageClient, endpoint);
+  },
 });
 
 yasqe.on("query", (yasqe, req) => console.log("running", req));

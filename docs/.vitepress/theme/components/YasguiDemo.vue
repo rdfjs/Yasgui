@@ -27,10 +27,10 @@ function toggleTheme() {
 }
 
 onMounted(async () => {
-  const { default: Yasgui } = await import("@zazuko/yasgui");
+  const { default: Yasgui, qlueLs } = await import("@zazuko/yasgui");
   await import("@zazuko/yasgui/style.css");
-  const { createQlueLsWorker, configureQlueLsBackend, configureQlueLsSettings, DEMO_ENDPOINT, fallbackPrefixMap } =
-    await import("../qluels");
+  // Only the WASM worker + demo endpoint are consumer-side; the qlue-ls plumbing lives in `qlueLs`.
+  const { createQlueLsWorker, DEMO_ENDPOINT } = await import("../utils");
 
   syncTheme(isDark.value);
 
@@ -49,18 +49,19 @@ onMounted(async () => {
   Yasgui.Yasr.registerPlugin("Graph", GraphPlugin as any);
   Yasgui.Yasr.registerPlugin("Geo", GeoPlugin as any);
 
-  // Yasgui and Yasqe are language-server agnostic: they receive a ready LSP worker and
-  // expose the resulting language client. Everything qlue-ls specific lives in ../qluels.
+  // Yasgui and Yasqe are language-server agnostic: they receive a ready LSP worker and expose the
+  // resulting language client. The qlue-ls plumbing comes from the `qlueLs` helpers (re-exported
+  // from @zazuko/yasgui); ../utils only builds the consumer-side WASM worker.
   yasgui = new Yasgui(container.value!, {
     requestConfig: { endpoint: DEMO_ENDPOINT },
     yasqe: {
       theme: isDark.value ? "dark" : "light",
-      onLanguageClientReady: (languageClient) => configureQlueLsSettings(languageClient),
+      onLanguageClientReady: (languageClient) => qlueLs.configureSettings(languageClient),
     },
-    yasr: { prefixes: fallbackPrefixMap },
+    yasr: { prefixes: qlueLs.fallbackPrefixMap },
     languageServerWorker: createQlueLsWorker,
     onEndpointChange: (yg: Yasgui, endpoint: string) =>
-      configureQlueLsBackend(yg.yasqe?.getLanguageClient(), endpoint),
+      qlueLs.configureBackend(yg.yasqe?.getLanguageClient(), endpoint),
   });
   (window as any).__yg = yasgui;
   loading.value = false;

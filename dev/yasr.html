@@ -21,9 +21,9 @@
     <div id="yasqe"></div>
     <div id="yasr"></div>
     <script type="module">
-      import Yasqe from "@zazuko/yasqe";
+      import Yasqe, { qlueLs } from "@zazuko/yasqe";
       import Yasr from "@zazuko/yasr";
-      import { setupThemeToggle, createQlueLsWorker, configureQlueLsBackend, DEMO_ENDPOINT } from "./qluels";
+      import { setupThemeToggle, createQlueLsWorker, DEMO_ENDPOINT } from "./utils";
 
       window.onpageshow = function () {
         const theme = setupThemeToggle((t) => window.yasqe?.setTheme(t));
@@ -31,7 +31,7 @@
           theme,
           requestConfig: { endpoint: DEMO_ENDPOINT },
           languageServerWorker: createQlueLsWorker,
-          onLanguageClientReady: (languageClient) => configureQlueLsBackend(languageClient, DEMO_ENDPOINT),
+          onLanguageClientReady: (languageClient) => qlueLs.configureBackend(languageClient, DEMO_ENDPOINT),
         });
         window.yasqe.on("queryResponse", function (yasqe, response, duration) {
           console.log({ response: response });

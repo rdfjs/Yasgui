@@ -21,6 +21,7 @@ import "./style/buttons.css";
 import type { editor } from "monaco-editor";
 import { MonacoLanguageClient } from "monaco-languageclient";
 export type { SparqlThemeOverrides } from "./editor/editorConfig";
+export * from "./languageServers";
 
 export interface Yasqe {
   on(eventName: "query", handler: (instance: Yasqe, req: Request, abortController?: AbortController) => void): this;

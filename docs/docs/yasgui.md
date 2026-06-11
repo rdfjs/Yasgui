@@ -4,15 +4,18 @@
 together.
 
 ```ts
-import Yasgui from "@zazuko/yasgui";
+import Yasgui, { qlueLs } from "@zazuko/yasgui";
 import "@zazuko/yasgui/style.css";
-import { createQlueLsWorker, configureQlueLsBackend } from "./qlue-ls";
+import { createQlueLsWorker } from "./qlue-ls";
 
 const yasgui = new Yasgui(document.getElementById("yasgui")!, {
   requestConfig: { endpoint: "https://sparql.dblp.org/sparql" },
   languageServerWorker: createQlueLsWorker,
+  yasqe: {
+    onLanguageClientReady: (languageClient) => qlueLs.configureSettings(languageClient),
+  },
   onEndpointChange: (yasgui, endpoint) =>
-    configureQlueLsBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
+    qlueLs.configureBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
 });
 ```
 

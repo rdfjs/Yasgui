@@ -25,6 +25,7 @@ if (window) {
   if (Yasqe) (window as any).Yasqe = Yasqe;
   if (Yasr) (window as any).Yasr = Yasr;
 }
+export { qlueLs } from "@zazuko/yasqe";
 export type YasguiRequestConfig = Omit<RequestConfig<Yasgui>, "adjustQueryBeforeRequest"> & {
   adjustQueryBeforeRequest: RequestConfig<Yasqe>["adjustQueryBeforeRequest"];
 };

@@ -25,7 +25,8 @@ Asset URLs use a relative base (`base: "./"`) so they resolve in any consuming b
 
 The `dev/` folder is a working reference for integrating the packages:
 
-- `dev/qluels.ts` + `dev/qluels.worker.ts` show the qlue-ls integration.
+- `dev/qluels.ts` + `dev/qluels.worker.ts` show the qlue-ls worker; the backend/settings plumbing
+  comes from the package's `qlueLs` helpers (see [Language server](./language-server)).
 - `dev/index.html` / `yasqe.html` / `yasr.html` show Yasgui / Yasqe / Yasr with the language server.
 
 ## The documentation site

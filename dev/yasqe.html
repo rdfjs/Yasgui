@@ -20,15 +20,15 @@
     </div>
     <div id="yasqe"></div>
     <script type="module">
-      import Yasqe from "@zazuko/yasqe";
-      import { setupThemeToggle, createQlueLsWorker, configureQlueLsBackend, DEMO_ENDPOINT } from "./qluels";
+      import Yasqe, { qlueLs } from "@zazuko/yasqe";
+      import { setupThemeToggle, createQlueLsWorker, DEMO_ENDPOINT } from "./utils";
 
       window.onpageshow = function () {
         const theme = setupThemeToggle((t) => window.yasqe?.setTheme(t));
         window.yasqe = new Yasqe(document.getElementById("yasqe"), {
           theme,
           languageServerWorker: createQlueLsWorker,
-          onLanguageClientReady: (languageClient) => configureQlueLsBackend(languageClient, DEMO_ENDPOINT),
+          onLanguageClientReady: (languageClient) => qlueLs.configureBackend(languageClient, DEMO_ENDPOINT),
         });
         window.yasqe.on("queryResponse", function () {
           console.log("response event", arguments);

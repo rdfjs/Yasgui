@@ -4,6 +4,9 @@
   "tsconfig": "./tsconfig.json",
   "name": "Yasgui API",
   "entryPointStrategy": "resolve",
+  "excludeReferences": true,
+  "excludeExternals": true,
+  "externalPattern": ["**/node_modules/**"],
   "entryPoints": [
     "packages/yasgui/src/index.ts",
     "packages/yasqe/src/index.ts",

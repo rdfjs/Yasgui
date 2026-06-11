@@ -22,8 +22,8 @@
     <div id="yasgui"></div>
 
     <script type="module">
-      import Yasgui from "@zazuko/yasgui";
-      import { setupThemeToggle, createQlueLsWorker, configureQlueLsBackend, DEMO_ENDPOINT } from "./qluels";
+      import Yasgui, { qlueLs } from "@zazuko/yasgui";
+      import { setupThemeToggle, createQlueLsWorker, DEMO_ENDPOINT } from "./utils";
       // import { createSwlsWorker } from "./swls";
       // TODO: implement with swls
       window.onpageshow = function () {
@@ -32,7 +32,7 @@
           requestConfig: { endpoint: DEMO_ENDPOINT },
           yasqe: { theme },
           // languageServerWorker: createSwlsWorker,
-          // onEndpointChange: (yasgui, endpoint) => configureQlueLsBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
+          // onEndpointChange: (yasgui, endpoint) => qlueLs.configureBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
         });
       };
     </script>

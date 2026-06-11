@@ -56,9 +56,10 @@ highlighting.
 
 ## 3. Set up the qlue-ls language server
 
-The language server runs in a **Web Worker**. Create two small files in your app. They are the only
-files you change to switch to a different SPARQL language server later. See the
-[Language server](./language-server) page for the full versions; here is the minimal setup:
+The language server runs in a **Web Worker**. The qlue-ls backend/settings plumbing ships with the
+package (the `qlueLs` helpers), so the only file you write is the worker, plus a tiny factory. These
+are also the only files you change to switch to a different SPARQL language server later. See the
+[Language server](./language-server) page for details; here is the minimal setup:
 
 :::code-group
 
@@ -74,26 +75,6 @@ export function createQlueLsWorker(): Promise<Worker> {
       if (e.data?.type === "ready") resolve(worker);
     };
   });
-}
-
-/** Register a SPARQL endpoint as the default qlue-ls backend so completions resolve against it. */
-let last: string | undefined;
-export async function configureQlueLsBackend(languageClient: any, endpoint: string) {
-  if (!languageClient || !endpoint || endpoint === last) return;
-  last = endpoint;
-  const backend = {
-    name: endpoint, // backend label/id (the endpoint URL is fine)
-    url: endpoint,
-    default: false,
-    prefixMap: {
-      rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-      rdfs: "http://www.w3.org/2000/01/rdf-schema#",
-    },
-    queries: {}, // optional completion-query templates, see the Language server page
-  };
-  // qlueLs/addBackend and qlueLs/updateDefaultBackend are LSP notifications (no response)
-  languageClient.sendNotification("qlueLs/addBackend", backend);
-  languageClient.sendNotification("qlueLs/updateDefaultBackend", { backendName: backend.name });
 }
 ```
 
@@ -129,9 +110,9 @@ export {};
 ## 4. Mount Yasgui
 
 ```ts
-import Yasgui from "@zazuko/yasgui";
+import Yasgui, { qlueLs } from "@zazuko/yasgui";
 import "@zazuko/yasgui/style.css";
-import { createQlueLsWorker, configureQlueLsBackend } from "./qlue-ls";
+import { createQlueLsWorker } from "./qlue-ls";
 
 const yasgui = new Yasgui(document.getElementById("yasgui")!, {
   requestConfig: { endpoint: "https://sparql.dblp.org/sparql" },
@@ -139,10 +120,15 @@ const yasgui = new Yasgui(document.getElementById("yasgui")!, {
   // Provide the language server worker (forwarded to the shared editor)
   languageServerWorker: createQlueLsWorker,
 
+  // Push qlue-ls settings once the language client is connected
+  yasqe: {
+    onLanguageClientReady: (languageClient) => qlueLs.configureSettings(languageClient),
+  },
+
   // Fires on load, tab switch, and endpoint edits, defined once, applies to all tabs.
-  // Use it to point the language server at the active endpoint.
+  // Register the active endpoint as the default backend so completions resolve against it.
   onEndpointChange: (yasgui, endpoint) =>
-    configureQlueLsBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
+    qlueLs.configureBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
 });
 ```
 

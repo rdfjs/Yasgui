@@ -22,8 +22,8 @@
     <div id="yasgui"></div>
 
     <script type="module">
-      import Yasgui from "@zazuko/yasgui";
-      import { setupThemeToggle, createQlueLsWorker, configureQlueLsBackend, DEMO_ENDPOINT } from "./qluels";
+      import Yasgui, { qlueLs } from "@zazuko/yasgui";
+      import { setupThemeToggle, createQlueLsWorker, DEMO_ENDPOINT } from "./utils";
       // yasgui/yasqe are LS-agnostic; to switch to another SPARQL language server only ./qluels changes.
       window.onpageshow = function () {
         const theme = setupThemeToggle((t) => window.yasgui.yasqe?.setTheme(t));
@@ -31,7 +31,7 @@
           requestConfig: { endpoint: DEMO_ENDPOINT },
           yasqe: { theme },
           languageServerWorker: createQlueLsWorker,
-          onEndpointChange: (yasgui, endpoint) => configureQlueLsBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
+          onEndpointChange: (yasgui, endpoint) => qlueLs.configureBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
         });
       };
     </script>

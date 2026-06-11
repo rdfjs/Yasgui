@@ -1,19 +1,27 @@
-/// <reference types="vite/client" />
 /**
- * Consumer-side qlue-ls configuration for the demo pages.
+ * qlue-ls helpers · settings, types and language-client plumbing for the qlue-ls SPARQL language
+ * server (https://github.com/IoannisNezis/Qlue-ls).
  *
- * yasqe/yasgui are language-server agnostic: they only receive a ready LSP `Worker` and expose the
- * resulting language client. Everything qlue-ls specific (the WASM worker, the backend/completion
- * query config, the `qlueLs/addBackend` extension) lives here, so swapping to another SPARQL
- * language server (e.g. SemanticWebLanguageServer/swls) only touches this file.
+ * Yasqe is language-server agnostic: it only receives a ready LSP `Worker` (via the
+ * `languageServerWorker` config) and hands back the resulting `MonacoLanguageClient` through
+ * `onLanguageClientReady`. This module bundles everything needed to drive qlue-ls *over that
+ * client* (settings, endpoint/backend registration, completion query templates) so consumers get
+ * a batteries-included setup without depending on the (heavy, WASM) `qlue-ls` package itself.
+ *
+ * The `qlue-ls` package is still consumer-provided: it only ships the WASM `Worker`. Everything
+ * here talks to the already-started language client, so it has no runtime dependency beyond the
+ * `monaco-languageclient` type (which yasqe already depends on) and the `fetch` API.
+ *
+ * @module languageServers/qlue-ls
  */
-import QlueLsWorker from "./qluels.worker?worker";
 import type { MonacoLanguageClient } from "monaco-languageclient";
 
+/** SPARQL engines qlue-ls can tailor its behaviour to. */
 export type SparqlEngine = "QLever" | "GraphDB" | "Virtuoso" | "MillenniumDB" | "Blazegraph" | "Jena";
 
+/** A `{ prefix: namespace }` map, e.g. `{ rdfs: "http://www.w3.org/2000/01/rdf-schema#" }`. */
 export interface PrefixMap {
-  [key: string]: string;
+  [prefix: string]: string;
 }
 
 /** Valid qlue-ls completion query template keys (the `CompletionTemplate` enum, camelCase). */
@@ -27,9 +35,10 @@ export type CompletionTemplate =
   | "valuesCompletionContextSensitive"
   | "valuesCompletionContextInsensitive";
 
+/** qlue-ls completion query templates (Jinja-like) keyed by their `CompletionTemplate`. */
 export type CompletionQueries = Partial<Record<CompletionTemplate, string>>;
 
-/** Qlue-ls endpoint backend configuration */
+/** A qlue-ls endpoint backend, sent via the `qlueLs/addBackend` notification. */
 export interface BackendConfiguration {
   name: string;
   url: string;
@@ -42,132 +51,46 @@ export interface BackendConfiguration {
   additionalData?: unknown;
 }
 
-/**
- * Create a qlue-ls language-server worker and resolve once its WASM is initialized.
- * Pass the result to Yasqe/Yasgui via the `languageServerWorker` config option.
- */
-export function createQlueLsWorker(): Promise<Worker> {
-  return new Promise((resolve) => {
-    const worker = new QlueLsWorker({ name: "qlue-ls" });
-    worker.onmessage = (event) => {
-      if (event.data?.type === "ready") resolve(worker);
-    };
-  });
+/** qlue-ls formatting settings (the `format` section of `qlueLs/changeSettings`). */
+export interface FormatSettings {
+  alignPredicates: boolean;
+  alignPrefixes: boolean;
+  separatePrologue: boolean;
+  capitalizeKeywords: boolean;
+  insertSpaces: boolean;
+  tabSize: number;
+  whereNewLine: boolean;
+  filterSameLine: boolean;
+  lineLength: number;
+  contractTriples: boolean;
+  keepEmptyLines: boolean;
 }
 
-/**
- * Fetch a prefix map from the given SPARQL endpoint by querying for prefixes declared with SHACL
- */
-async function fetchPrefixMap(endpoint: string): Promise<PrefixMap> {
-  const prefixes: PrefixMap = {};
-  try {
-    const url = new URL(endpoint);
-    url.searchParams.set(
-      "query",
-      `PREFIX sh: <http://www.w3.org/ns/shacl#>
-      SELECT DISTINCT ?prefix ?namespace
-      WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix}
-      ORDER BY ?prefix`,
-    );
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      signal: AbortSignal.timeout(5000),
-      headers: { Accept: "application/sparql-results+json" },
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const bindings = (await response.json()).results.bindings;
-    const used = new Set<string>();
-    bindings.forEach((b: any) => {
-      const prefix = b.prefix.value;
-      const namespace = b.namespace.value;
-      if (!used.has(namespace) && !prefixes[prefix]) {
-        prefixes[prefix] = namespace;
-        used.add(namespace);
-      }
-    });
-  } catch (error: any) {
-    console.warn(`Error retrieving prefixes from ${endpoint}:`, error?.message || error);
-  }
-  return Object.keys(prefixes).length === 0 ? fallbackPrefixMap : prefixes;
+/** qlue-ls completion settings (the `completion` section of `qlueLs/changeSettings`). */
+export interface CompletionSettings {
+  timeoutMs: number;
+  resultSizeLimit: number;
+  subjectCompletionTriggerLength: number;
+  objectCompletionSuffix: boolean;
+  variableCompletionLimit: number;
+  sameSubjectSemicolon: boolean;
 }
 
-/** Build a flat qlue-ls BackendConfiguration for an endpoint, fetching prefixes when needed. */
-export async function createBackendConf(endpoint: string): Promise<BackendConfiguration> {
-  const prefixMap = await fetchPrefixMap(endpoint);
-  return {
-    name: endpoint,
-    url: endpoint,
-    prefixMap,
-    queries: completionQueries,
-    default: false,
-  };
+/** qlue-ls prefix-handling settings (the `prefixes` section of `qlueLs/changeSettings`). */
+export interface PrefixesSettings {
+  addMissing: boolean;
+  removeUnused: boolean;
 }
 
-/**
- * Update qlue-ls settings
- */
-export function configureQlueLsSettings(languageClient: MonacoLanguageClient): void {
-  languageClient.sendNotification("qlueLs/changeSettings", qlueLsSettings);
+/** Full qlue-ls server settings, sent via the `qlueLs/changeSettings` notification. */
+export interface Settings {
+  format: FormatSettings;
+  completion: CompletionSettings;
+  prefixes: PrefixesSettings;
 }
 
-// Avoid re-registering the same backend repeatedly
-let lastBackendEndpoint: string | undefined;
-
-/**
- * Register a SPARQL endpoint with the qlue-ls language client and make it the default backend,
- */
-export async function configureQlueLsBackend(languageClient: any, endpoint: string): Promise<void> {
-  if (!languageClient || !endpoint || endpoint === lastBackendEndpoint) return;
-  lastBackendEndpoint = endpoint;
-  try {
-    const backend = await createBackendConf(endpoint);
-    languageClient.sendNotification("qlueLs/addBackend", backend);
-    languageClient.sendNotification("qlueLs/updateDefaultBackend", { backendName: backend.name });
-  } catch (error) {
-    lastBackendEndpoint = undefined; // allow retry
-    console.error("Failed to configure qlue-ls backend for", endpoint, error);
-  }
-}
-
-// Shared code for the demo pages
-
-/** Default SPARQL endpoint used across the demo pages. */
-export const DEMO_ENDPOINT = "https://sparql.dblp.org/sparql";
-
-export type DevTheme = "light" | "dark";
-
-/**
- * Wire the demo page's light/dark switcher: start from the OS preference, and on toggle set the
- * `[data-theme]` attribute (which drives the CSS) and call `onThemeChange` (e.g. editor.setTheme).
- */
-export function setupThemeToggle(onThemeChange?: (theme: DevTheme) => void): DevTheme {
-  let currentTheme: DevTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  document.documentElement.dataset.theme = currentTheme;
-  const button = document.getElementById("darkModeToggle");
-  const render = () => {
-    if (!button) return;
-    button.textContent = currentTheme === "dark" ? "☀️" : "🌙";
-    const title = currentTheme === "dark" ? "Switch to light theme" : "Switch to dark theme";
-    button.setAttribute("title", title);
-    button.setAttribute("aria-label", title);
-  };
-  render();
-  button?.addEventListener("click", () => {
-    currentTheme = currentTheme === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = currentTheme;
-    render();
-    onThemeChange?.(currentTheme);
-  });
-  return currentTheme;
-}
-
-// Qlue-ls settings
-
-/**
- * qlue-ls server settings pushed once the language client is ready. Mirrors the keys the qlue-ls
- * VS Code extension reads from its `config.get(...)` calls; here we send the demo defaults.
- */
-export const qlueLsSettings = {
+/** Sensible default qlue-ls settings. Override per-call in {@link configureSettings}. */
+export const defaultSettings: Settings = {
   format: {
     alignPredicates: false,
     alignPrefixes: false,
@@ -195,7 +118,7 @@ export const qlueLsSettings = {
   },
 };
 
-/** Minimal fallback prefixes used when an endpoint exposes none. */
+/** Common prefixes used as a fallback when an endpoint exposes none of its own. */
 export const fallbackPrefixMap: PrefixMap = {
   activitystreams: "https://www.w3.org/ns/activitystreams#",
   adms: "http://www.w3.org/ns/adms#",
@@ -273,10 +196,10 @@ export const fallbackPrefixMap: PrefixMap = {
 };
 
 /**
- * Completion query templates (qlue-ls Jinja-like templating) used to resolve term completions
- * against the endpoint. Generic enough to work on most label-bearing datasets.
+ * Default completion query templates (qlue-ls Jinja-like templating) used to resolve term
+ * completions against the endpoint. Generic enough to work on most rdfs:label-bearing datasets.
  */
-const completionQueries: CompletionQueries = {
+export const defaultCompletionQueries: CompletionQueries = {
   // TODO: improve default completionQueries
   subjectCompletion: `{% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -412,3 +335,101 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count WHERE {
 ORDER BY DESC(?qlue_ls_count)
 LIMIT {{ limit }} OFFSET {{ offset }}`,
 };
+
+/**
+ * Fetch a prefix map from a SPARQL endpoint by querying for prefixes declared with SHACL
+ * (`sh:prefix` / `sh:namespace`). Falls back to {@link fallbackPrefixMap} when the endpoint
+ * exposes none or the request fails.
+ */
+export async function fetchPrefixMap(endpoint: string): Promise<PrefixMap> {
+  const prefixes: PrefixMap = {};
+  try {
+    const url = new URL(endpoint);
+    url.searchParams.set(
+      "query",
+      `PREFIX sh: <http://www.w3.org/ns/shacl#>
+      SELECT DISTINCT ?prefix ?namespace
+      WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix}
+      ORDER BY ?prefix`,
+    );
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      signal: AbortSignal.timeout(5000),
+      headers: { Accept: "application/sparql-results+json" },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const bindings = (await response.json()).results.bindings;
+    const used = new Set<string>();
+    bindings.forEach((b: any) => {
+      const prefix = b.prefix.value;
+      const namespace = b.namespace.value;
+      if (!used.has(namespace) && !prefixes[prefix]) {
+        prefixes[prefix] = namespace;
+        used.add(namespace);
+      }
+    });
+  } catch (error: any) {
+    console.warn(`Error retrieving prefixes from ${endpoint}:`, error?.message || error);
+  }
+  return Object.keys(prefixes).length === 0 ? fallbackPrefixMap : prefixes;
+}
+
+/** Options for {@link createBackendConf} / {@link configureBackend}. */
+export interface BackendOptions {
+  /** Backend display name (defaults to the endpoint URL). */
+  name?: string;
+  /** Prefix map to use. When omitted, prefixes are fetched from the endpoint. */
+  prefixMap?: PrefixMap;
+  /** Completion query templates (defaults to {@link defaultCompletionQueries}). */
+  queries?: CompletionQueries;
+  /** Target SPARQL engine, lets qlue-ls tailor generated queries. */
+  engine?: SparqlEngine;
+  /** Whether this backend should be the default one. */
+  default?: boolean;
+}
+
+/**
+ * Build a qlue-ls {@link BackendConfiguration} for an endpoint, fetching prefixes from the
+ * endpoint when none are provided in `options`.
+ */
+export async function createBackendConf(endpoint: string, options: BackendOptions = {}): Promise<BackendConfiguration> {
+  const prefixMap = options.prefixMap ?? (await fetchPrefixMap(endpoint));
+  return {
+    name: options.name ?? endpoint,
+    url: endpoint,
+    prefixMap,
+    queries: options.queries ?? defaultCompletionQueries,
+    engine: options.engine,
+    default: options.default ?? false,
+  };
+}
+
+/** Push qlue-ls server settings via the `qlueLs/changeSettings` notification. */
+export function configureSettings(languageClient: MonacoLanguageClient, settings: Settings = defaultSettings): void {
+  void languageClient.sendNotification("qlueLs/changeSettings", settings);
+}
+
+// Avoid re-registering the same backend repeatedly when configureBackend is called on every change.
+let lastBackendEndpoint: string | undefined;
+
+/**
+ * Register a SPARQL endpoint with the qlue-ls language client and make it the default backend.
+ * Safe to call repeatedly (e.g. from `onLanguageClientReady` or an endpoint-change handler): the
+ * same endpoint is only registered once.
+ */
+export async function configureBackend(
+  languageClient: MonacoLanguageClient | undefined,
+  endpoint: string,
+  options: BackendOptions = {},
+): Promise<void> {
+  if (!languageClient || !endpoint || endpoint === lastBackendEndpoint) return;
+  lastBackendEndpoint = endpoint;
+  try {
+    const backend = await createBackendConf(endpoint, options);
+    void languageClient.sendNotification("qlueLs/addBackend", backend);
+    void languageClient.sendNotification("qlueLs/updateDefaultBackend", { backendName: backend.name });
+  } catch (error) {
+    lastBackendEndpoint = undefined; // allow retry
+    console.error("Failed to configure qlue-ls backend for", endpoint, error);
+  }
+}
