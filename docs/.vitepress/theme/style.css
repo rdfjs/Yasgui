@@ -123,3 +123,10 @@
   --docsearch-primary-color: var(--vp-c-brand-1) !important;
 }
 
+
+/**
+ * Invert the logo colors in dark mode (matches dev/ files)
+ */
+.dark .VPNavBarTitle .logo {
+  filter: invert(1);
+}

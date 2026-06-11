@@ -1,12 +1,10 @@
 /**
- * The default options of YASQE (check the CodeMirror documentation for even
- * more options, such as disabling line numbers, or changing keyboard shortcut
- * keys). Either change the default options by setting Yasqe.defaults, or by
- * passing your own options as second argument to the YASQE constructor
+ * The default Yasqe options. Editor-specific behaviour (line numbers, word wrap, keybindings, ...)
+ * is configured through Monaco editor options, see the `editorOptions` config field. Override these
+ * defaults by setting `Yasqe.defaults`, or by passing your own options as the second constructor argument.
  */
 import { default as Yasqe, Config, PlainRequestConfig } from "./";
 import * as queryString from "query-string";
-//need to pass Yasqe object as argument, as the imported version might not have inherited all (e.g. `fold`) props of Codemirror yet
 export default function get() {
   const config: Omit<Config, "requestConfig"> = {
     value: `PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>

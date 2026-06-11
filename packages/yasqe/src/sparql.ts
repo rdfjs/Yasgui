@@ -134,7 +134,7 @@ export function getUrlArguments(yasqe: Yasqe, _config: Config["requestConfig"]):
    */
   const namedGraphs = isFunction(config.namedGraphs) ? config.namedGraphs(yasqe) : config.namedGraphs;
   if (namedGraphs && namedGraphs.length > 0) {
-    let argName = queryMode === "query" ? "named-graph-uri" : "using-named-graph-uri ";
+    let argName = queryMode === "query" ? "named-graph-uri" : "using-named-graph-uri";
     data[argName] = namedGraphs;
   }
   /**
@@ -142,8 +142,8 @@ export function getUrlArguments(yasqe: Yasqe, _config: Config["requestConfig"]):
    */
   const defaultGraphs = isFunction(config.defaultGraphs) ? config.defaultGraphs(yasqe) : config.defaultGraphs;
   if (defaultGraphs && defaultGraphs.length > 0) {
-    let argName = queryMode == "query" ? "default-graph-uri" : "using-graph-uri ";
-    data[argName] = namedGraphs;
+    let argName = queryMode == "query" ? "default-graph-uri" : "using-graph-uri";
+    data[argName] = defaultGraphs;
   }
 
   /**

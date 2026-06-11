@@ -42,11 +42,11 @@ export interface Config<EndpointObject extends CatalogueItem = CatalogueItem> {
   //The function allows us to modify the config before we pass it on to a tab
   populateFromUrl: boolean | ((configFromUrl: PersistedTabJson) => PersistedTabJson);
   autoAddOnInit: boolean;
-  persistenceId: ((yasr: Yasgui) => string) | string | null;
+  persistenceId: ((yasgui: Yasgui) => string) | string | null;
   persistenceLabelConfig: string;
   persistenceLabelResponse: string;
   persistencyExpire: number;
-  yasqe: Partial<YasqeConfig>;
+  yasqe: YasqeConfig;
   yasr: YasrConfig;
   requestConfig: YasguiRequestConfig;
   contextMenuContainer: HTMLElement | undefined;
@@ -115,8 +115,9 @@ export class Yasgui extends EventEmitter {
   // user switches tabs in the meantime.
   private queryingTab: Tab | undefined;
   public static Tab = Tab;
-  constructor(parent: HTMLElement, config: PartialConfig) {
+  constructor(parent: HTMLElement, config: PartialConfig = {}) {
     super();
+    if (!parent) throw new Error("No parent passed as argument. Dont know where to draw Yasgui");
     this.rootEl = document.createElement("div");
     addClass(this.rootEl, "yasgui");
     parent.appendChild(this.rootEl);
@@ -189,7 +190,7 @@ export class Yasgui extends EventEmitter {
   /** Create the single shared Monaco editor and route its events to the active tab. */
   private initGlobalYasqe() {
     this.yasqeWrapperEl = document.createElement("div");
-    const yasqeConf: Partial<YasqeConfig> = {
+    const yasqeConf: YasqeConfig = {
       ...this.config.yasqe,
       persistenceId: null, // yasgui handles persistent storing, per tab
       consumeShareLink: null, // handled by the parent yasgui instance, not yasqe

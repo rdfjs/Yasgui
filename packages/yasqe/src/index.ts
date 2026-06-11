@@ -58,6 +58,8 @@ export class Yasqe extends EventEmitter {
   public languageClientWrapper?: LanguageClientWrapper;
   public vscodeApi?: MonacoVscodeApiWrapper;
   public editor?: editor.IStandaloneCodeEditor;
+  /** Resolves once the Monaco editor has finished initializing (rejects if init fails). */
+  public ready: Promise<void>;
 
   private req?: Request;
   private abortController?: AbortController;
@@ -139,90 +141,6 @@ export class Yasqe extends EventEmitter {
       this.editor?.onDidBlurEditorText(() => {
         this.emit("blur");
       });
-
-      // TODO: fix all monaco.editor references
-      // monaco.editor.addCommand({
-      //   id: "jumpToNextPosition",
-      //   run: () => {
-      //     this.languageClientWrapper
-      //       ?.getLanguageClient()!
-      //       .sendRequest("textDocument/formatting", {
-      //         textDocument: { uri: this.editor?.getModel()?.uri.toString() },
-      //         options: {
-      //           tabSize: 2,
-      //           insertSpaces: true,
-      //         },
-      //       })
-      //       .then((response: any) => {
-      //         const edits = response.map((edit: any) => {
-      //           return {
-      //             range: {
-      //               startLineNumber: edit.range.start.line + 1,
-      //               startColumn: edit.range.start.character + 1,
-      //               endLineNumber: edit.range.end.line + 1,
-      //               endColumn: edit.range.end.character + 1,
-      //             },
-      //             text: edit.newText,
-      //           };
-      //         });
-      //         this.editor?.getModel()!.applyEdits(edits);
-      //         const cursorPosition = this.editor?.getPosition();
-      //         if (cursorPosition) {
-      //           this.languageClientWrapper
-      //             ?.getLanguageClient()!
-      //             .sendRequest("qlueLs/jump", {
-      //               textDocument: { uri: this.editor?.getModel()?.uri.toString() },
-      //               position: {
-      //                 line: cursorPosition?.lineNumber - 1,
-      //                 character: cursorPosition?.column - 1,
-      //               },
-      //             })
-      //             .then((response: any) => {
-      //               if (response) {
-      //                 const newCursorPosition = {
-      //                   lineNumber: response.position.line + 1,
-      //                   column: response.position.character + 1,
-      //                 };
-      //                 if (response.insertAfter) {
-      //                   this.editor?.executeEdits("jumpToNextPosition", [
-      //                     {
-      //                       range: new monaco.Range(
-      //                         newCursorPosition.lineNumber,
-      //                         newCursorPosition.column,
-      //                         newCursorPosition.lineNumber,
-      //                         newCursorPosition.column
-      //                       ),
-      //                       text: response.insertAfter,
-      //                     },
-      //                   ]);
-      //                 }
-      //                 this.editor?.setPosition(newCursorPosition, "jumpToNextPosition");
-      //                 if (response.insertBefore) {
-      //                   this.editor?.getModel()?.applyEdits([
-      //                     {
-      //                       range: new monaco.Range(
-      //                         newCursorPosition.lineNumber,
-      //                         newCursorPosition.column,
-      //                         newCursorPosition.lineNumber,
-      //                         newCursorPosition.column
-      //                       ),
-      //                       text: response.insertBefore,
-      //                     },
-      //                   ]);
-      //                 }
-      //                 this.editor?.trigger("editor", "editor.action.triggerSuggest", {});
-      //               }
-      //             });
-      //         }
-      //       });
-      //     this.editor?.trigger("jumpToNextPosition", "editor.action.formatDocument", {});
-      //     // console.log("jump to next location");
-      //   },
-      // });
-      // monaco.editor.addKeybindingRule({
-      //   command: "jumpToNextPosition",
-      //   keybinding: monaco.KeyMod.Alt | monaco.KeyCode.KeyN,
-      // });
 
       // Do some post processing, init storage
       this.drawButtons();
@@ -355,8 +273,10 @@ export class Yasqe extends EventEmitter {
 
     this.config = merge({}, Yasqe.defaults, conf);
 
-    // Initialize the editor and then setup everything else
-    this.initEditor(this.rootEl);
+    // Initialize the editor and then setup everything else. Exposed as `ready` so consumers can
+    // await initialization; swallow here to avoid an unhandled rejection when they don't.
+    this.ready = this.initEditor(this.rootEl);
+    this.ready.catch(() => {});
   }
 
   private handleBeforeUnload = () => {
@@ -691,12 +611,16 @@ export class Yasqe extends EventEmitter {
   }
 
   /**
-   * Get SPARQL query props
+   * Detect the SPARQL query form by scanning the query text. Comments and the PREFIX/BASE prologue
+   * are skipped so the first real keyword (SELECT, CONSTRUCT, INSERT, ...) is what's matched.
+   * Defaults to "SELECT" when nothing matches (e.g. an empty or still-typed query).
    */
-  public getQueryType() {
-    // TODO: remove? Or get from Qlue-ls? Or from sparql.js
-    // return this.getOption("queryType");
-    return "SELECT";
+  public getQueryType(): QueryType {
+    const withoutComments = this.getValue().replace(/(^|\s)#[^\n]*/g, " ");
+    // Drop the leading PREFIX/BASE prologue to reach the actual query/update keyword.
+    const body = withoutComments.replace(/(\s|^)(PREFIX\s+[^\s]*\s*:\s*<[^>]*>|BASE\s+<[^>]*>)/gi, " ");
+    const m = body.match(/\b(SELECT|CONSTRUCT|ASK|DESCRIBE|INSERT|DELETE|LOAD|CLEAR|CREATE|DROP|COPY|MOVE|ADD)\b/i);
+    return m ? (m[1].toUpperCase() as QueryType) : "SELECT";
   }
   public getQueryMode(): "update" | "query" {
     switch (this.getQueryType()) {
@@ -752,17 +676,6 @@ export class Yasqe extends EventEmitter {
   public hideNotification(key: string) {
     if (this.notificationEls[key]) {
       removeClass(this.notificationEls[key], "active");
-    }
-  }
-
-  public updateWidget() {
-    if (
-      (this as any).cursorCoords &&
-      (this as any).state.completionActive &&
-      (this as any).state.completionActive.widget
-    ) {
-      const newTop: string = (this as any).cursorCoords(null).bottom;
-      (this as any).state.completionActive.widget.hints.style.top = newTop + "px";
     }
   }
 
@@ -858,6 +771,22 @@ export class Yasqe extends EventEmitter {
   static defaults = getDefaults();
 }
 
+/** The SPARQL query/update forms, as returned by {@link Yasqe.getQueryType}. */
+export type QueryType =
+  | "SELECT"
+  | "CONSTRUCT"
+  | "ASK"
+  | "DESCRIBE"
+  | "INSERT"
+  | "DELETE"
+  | "LOAD"
+  | "CLEAR"
+  | "CREATE"
+  | "DROP"
+  | "COPY"
+  | "MOVE"
+  | "ADD";
+
 export interface RequestConfig<Y> {
   queryArgument: string | ((yasqe: Y) => string) | undefined;
   endpoint: string | ((yasqe: Y) => string);
@@ -866,7 +795,7 @@ export interface RequestConfig<Y> {
   acceptHeaderSelect: string | ((yasqe: Y) => string);
   acceptHeaderUpdate: string | ((yasqe: Y) => string);
   namedGraphs: string[] | ((yasqe: Y) => string[]);
-  defaultGraphs: string[] | ((yasqe: Y) => []);
+  defaultGraphs: string[] | ((yasqe: Y) => string[]);
   args: Array<{ name: string; value: string }> | ((yasqe: Y) => Array<{ name: string; value: string }>);
   headers: { [key: string]: string } | ((yasqe: Y) => { [key: string]: string });
   withCredentials: boolean | ((yasqe: Y) => boolean);
@@ -935,39 +864,3 @@ export interface PersistentConfig {
 }
 
 export default Yasqe;
-
-// class LspInfoOverlayWidget implements monaco.editor.IOverlayWidget {
-//   private domNode: HTMLElement;
-
-//   constructor(private readonly editor: monaco.editor.IStandaloneCodeEditor, backend: any) {
-//     this.domNode = document.createElement("div");
-//     this.domNode.style.background = "#444";
-//     this.domNode.style.color = "#fff";
-//     this.domNode.style.padding = "0.3em 0.5em";
-//     this.domNode.style.fontSize = "12px";
-//     this.domNode.style.borderRadius = "4px";
-//     this.domNode.style.cursor = "pointer";
-//     this.domNode.addEventListener("mouseover", () => {
-//       this.domNode.style.filter = "brightness(60%)";
-//     });
-//     this.domNode.addEventListener("mouseout", () => {
-//       this.domNode.style.filter = "";
-//     });
-//     this.domNode.innerText = "ℹ️ Backends Info";
-//     this.domNode.onclick = () => {
-//       // const info = getLanguageServerState();
-//       alert(JSON.stringify(backend, null, 2));
-//     };
-//   }
-//   getId(): string {
-//     return "lsp.info.overlay";
-//   }
-//   getDomNode(): HTMLElement {
-//     return this.domNode;
-//   }
-//   getPosition(): monaco.editor.IOverlayWidgetPosition {
-//     return {
-//       preference: monaco.editor.OverlayWidgetPositionPreference.BOTTOM_RIGHT_CORNER,
-//     };
-//   }
-// }
