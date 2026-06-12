@@ -5,6 +5,20 @@
 import DOMPurify from "dompurify";
 export { default as Storage } from "./Storage";
 export type { DeepPartial, DeepReadonly } from "./types";
+export type {
+  QueryType,
+  RequestConfig,
+  PlainRequestConfig,
+  YasqePersistentConfig,
+  RequestArgs,
+  Prefixes,
+  IYasqe,
+  YasqeFactory,
+} from "./yasqe";
+export { defaultQueryValue, defaultRequestConfig, getPrefixesFromQuery, getQueryType, getQueryMode } from "./yasqe";
+export * from "./languageServers/qlueLs";
+// Shared SPARQL request handling (build/execute the HTTP request + query lifecycle events).
+export * from "./sparql";
 
 const { sanitize } = DOMPurify;
 

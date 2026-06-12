@@ -2,8 +2,7 @@ import JsUri from "jsuri";
 
 import { default as Tab, PersistedJson } from "./Tab";
 import Yasr from "@zazuko/yasr";
-import { PlainRequestConfig } from "@zazuko/yasqe";
-import { getAsValue } from "@zazuko/yasgui-utils";
+import { PlainRequestConfig, getAsValue } from "@zazuko/yasgui-utils";
 var getUrlParams = function (_url?: string) {
   var urlFromWindow = false;
   if (!_url) {

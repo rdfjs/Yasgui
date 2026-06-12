@@ -10,7 +10,7 @@
     "preview": "vite preview --port 4000",
     "build": "rimraf ./build && npm run build:demo && npm run build:lib",
     "build:demo": "NODE_ENV=production vite build",
-    "build:lib": "for p in utils yasqe yasr yasgui; do BUILD_PACKAGE=$p NODE_ENV=production vite build || exit 1; done",
+    "build:lib": "for p in utils yasqe yasqe-codemirror yasr yasgui; do BUILD_PACKAGE=$p NODE_ENV=production vite build || exit 1; done",
     "util:prefixes": "curl -fsS http://prefix.cc/popular/all.file.json | jq 'to_entries | .[0:500] | from_entries' > prefixes.json",
     "util:lint": "ESLINT_STRICT=true eslint \"packages/*/{src,test,grammar}/**/*.{ts,tsx}\"",
     "util:validateTs": "tsc -p ./tsconfig.json --noEmit",

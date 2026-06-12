@@ -17,6 +17,7 @@
       "@zazuko/yasgui": ["./packages/yasgui/src"],
       "@zazuko/yasgui-utils": ["./packages/utils/src"],
       "@zazuko/yasqe": ["./packages/yasqe/src"],
+      "@zazuko/yasqe-codemirror": ["./packages/yasqe-codemirror/src"],
       "@zazuko/yasr": ["./packages/yasr/src"]
     }
   },

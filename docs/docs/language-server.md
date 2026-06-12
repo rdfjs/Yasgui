@@ -10,7 +10,7 @@ discovery, completion-query templates and types) under the `qlueLs` namespace, s
 write yourself is the WASM worker:
 
 ```ts
-import { qlueLs } from "@zazuko/yasqe"; // also re-exported from "@zazuko/yasgui"
+import { qlueLs } from "@zazuko/yasqe"; // the Monaco editor; not re-exported from "@zazuko/yasgui"
 ```
 
 ## The worker
@@ -78,14 +78,18 @@ register the active endpoint as the default backend (so completions resolve agai
   edits, once for the whole app):
 
   ```ts [main.ts]
-  import Yasgui, { qlueLs } from "@zazuko/yasgui";
+  import Yasgui from "@zazuko/yasgui";
+  import Yasqe, { qlueLs } from "@zazuko/yasqe";
   import { createQlueLsWorker } from "./qlue-ls";
 
   new Yasgui(el, {
-    languageServerWorker: createQlueLsWorker,
-    yasqe: {
-      onLanguageClientReady: (languageClient) => qlueLs.configureSettings(languageClient),
-    },
+    // Yasgui is editor-independent: pass an editor factory and wire the worker into the editor.
+    yasqe: (parent, conf) =>
+      new Yasqe(parent, {
+        ...conf,
+        languageServerWorker: createQlueLsWorker,
+        onLanguageClientReady: (languageClient) => qlueLs.configureSettings(languageClient),
+      }),
     onEndpointChange: (yasgui, endpoint) =>
       qlueLs.configureBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
   });
@@ -148,6 +152,33 @@ The qlue-ls `BackendConfiguration` (what `createBackendConf` builds) is flat and
 `prefixMap`: many endpoints expose their prefixes via `sh:namespace` / `sh:prefix`, and `qlueLs`
 falls back to `fallbackPrefixMap` (a broad set of common vocab prefixes) when none are returned.
 :::
+
+## CodeMirror editor (`@zazuko/yasqe-codemirror`)
+
+The Monaco editor (`@zazuko/yasqe`) is the default, but Yasgui is editor-independent: you can build
+the editor factory around the CodeMirror 6 editor instead. `@zazuko/yasqe-codemirror` takes a ready
+LSP **client** (rather than a worker) via `lsp: { client }`. You own the qlue-ls wiring (transport,
+pull diagnostics, semantic-token highlighting) and pass the resulting `@codemirror/lsp-client`
+`LSPClient` in:
+
+```ts
+import Yasgui from "@zazuko/yasgui";
+import Yasqe from "@zazuko/yasqe-codemirror";
+import { createQlueLsClient, setQlueLsBackend } from "./qlueLsClient";
+
+const client = await createQlueLsClient({ endpoint });
+const lsp = { client };
+
+new Yasgui(el, {
+  requestConfig: { endpoint },
+  yasqe: (parent, conf) => new Yasqe(parent, { ...conf, lsp }),
+  onEndpointChange: (_yasgui, endpoint) => setQlueLsBackend(client, { endpoint }),
+});
+```
+
+The completion-query templates (`defaultCompletionQueries`) used by the client live in
+`@zazuko/yasgui-utils`. See `dev/codemirror.html` and `dev/qlueLsClient.ts` in the repo for the full
+qlue-ls wiring (the `qlueLs` helpers above are Monaco-specific and not used here).
 
 ## Using a different language server
 

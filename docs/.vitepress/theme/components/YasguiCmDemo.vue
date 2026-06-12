@@ -27,18 +27,19 @@ function toggleTheme() {
 
 onMounted(async () => {
   // Yasgui is editor-independent: it builds whatever editor the `yasqe` factory returns. Here we use
-  // the Monaco editor (@zazuko/yasqe); see /codemirror for the CodeMirror 6 alternative.
+  // the CodeMirror 6 editor (@zazuko/yasqe-codemirror) instead of the Monaco one (@zazuko/yasqe).
   const { default: Yasgui } = await import("@zazuko/yasgui");
-  const { default: Yasqe, qlueLs } = await import("@zazuko/yasqe");
+  const { default: Yasqe } = await import("@zazuko/yasqe-codemirror");
   await import("@zazuko/yasgui/style.css");
-  await import("@zazuko/yasqe/style.css");
-  // Only the WASM worker + demo endpoint are consumer-side; the qlue-ls plumbing lives in `qlueLs`.
-  const { createQlueLsWorker, DEMO_ENDPOINT } = await import("../utils");
+  await import("@zazuko/yasqe-codemirror/style.css");
+  // The qlue-ls language server (WASM) and the @codemirror/lsp-client wiring live in the embedder.
+  const { createQlueLsClient, setQlueLsBackend } = await import("../qluelsCmClient");
+  const { DEMO_ENDPOINT } = await import("../utils");
 
   syncTheme(isDark.value);
 
   if (yasgui) {
-    // Re-attach the existing rootEl instead of re-initializing Monaco.
+    // Re-attach the existing rootEl instead of re-creating the editor.
     container.value!.appendChild(yasgui.rootEl);
     loading.value = false;
     return;
@@ -52,24 +53,27 @@ onMounted(async () => {
   Yasgui.Yasr.registerPlugin("Graph", GraphPlugin as any);
   Yasgui.Yasr.registerPlugin("Geo", GeoPlugin as any);
 
-  // Yasgui and Yasqe are language-server agnostic: they receive a ready LSP worker and expose the
-  // resulting language client. The qlue-ls plumbing comes from the `qlueLs` helpers (re-exported
-  // from @zazuko/yasgui); ../utils only builds the consumer-side WASM worker.
+  const backend = { endpoint: DEMO_ENDPOINT };
+  // Start qlue-ls and connect a single shared LSP client for all tabs.
+  let lsp: { client: any } | undefined;
+  try {
+    const client = await createQlueLsClient(backend, { completion: { timeoutMs: 10000, resultSizeLimit: 50 } });
+    lsp = { client };
+  } catch (e) {
+    console.warn("Could not start qlue-ls; running editors without a language server", e);
+  }
+
   yasgui = new Yasgui(container.value!, {
     requestConfig: { endpoint: DEMO_ENDPOINT },
-    // The editor factory builds a Monaco Yasqe, wiring in the theme + consumer-provided LSP worker.
+    // The editor factory: build a CodeMirror Yasqe, wiring in the theme + shared LSP client.
     yasqe: (parent: HTMLElement, conf: any) =>
-      new Yasqe(parent, {
-        ...conf,
-        theme: isDark.value ? "dark" : "light",
-        languageServerWorker: createQlueLsWorker,
-        onLanguageClientReady: (languageClient: any) => qlueLs.configureSettings(languageClient),
-      }),
-    yasr: { prefixes: qlueLs.fallbackPrefixMap },
-    onEndpointChange: (yg: any, endpoint: string) =>
-      qlueLs.configureBackend(yg.yasqe?.getLanguageClient(), endpoint),
+      new Yasqe(parent, { ...conf, theme: isDark.value ? "dark" : "light", lsp }),
+    // Keep qlue-ls pointed at the active tab's endpoint.
+    onEndpointChange: (_yg: any, endpoint: string) => {
+      if (lsp?.client) setQlueLsBackend(lsp.client, { ...backend, endpoint });
+    },
   });
-  (window as any).__yg = yasgui;
+  (window as any).__ygcm = yasgui;
   loading.value = false;
 });
 

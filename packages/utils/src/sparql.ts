@@ -1,7 +1,20 @@
-import { default as Yasqe, Config, RequestConfig } from "./";
+/**
+ * SPARQL request handling shared by both editors (Monaco `@zazuko/yasqe` and CodeMirror
+ * `@zazuko/yasqe-codemirror`). Builds the HTTP request from the editor's request config + query,
+ * executes it, and emits the query lifecycle events.
+ *
+ * It operates on the editor-agnostic {@link IYasqe} contract and emits events payload-only: every
+ * editor's `emit` prepends the instance, so handlers receive `(instance, ...payload)`.
+ * @module sparql
+ */
 import { merge, isFunction } from "lodash-es";
 import * as queryString from "query-string";
-export type YasqeAjaxConfig = Config["requestConfig"];
+import type { IYasqe, RequestConfig, RequestArgs } from "./yasqe";
+
+/** A request config, or a function returning one (resolved against the editor at request time). */
+export type YasqeAjaxConfig = RequestConfig<IYasqe> | ((yasqe: IYasqe) => RequestConfig<IYasqe>);
+
+/** A fully-resolved request, ready to be turned into a `fetch` call. */
 export interface PopulatedAjaxConfig {
   url: string;
   reqMethod: "POST" | "GET";
@@ -10,33 +23,27 @@ export interface PopulatedAjaxConfig {
   args: RequestArgs;
   withCredentials: boolean;
 }
-function getRequestConfigSettings(yasqe: Yasqe, conf?: Partial<Config["requestConfig"]>): RequestConfig<Yasqe> {
+
+function getRequestConfigSettings(yasqe: IYasqe, conf?: YasqeAjaxConfig): RequestConfig<IYasqe> {
   if (isFunction(conf)) {
-    return conf(yasqe) as RequestConfig<Yasqe>;
+    return conf(yasqe) as RequestConfig<IYasqe>;
   }
-  return (conf ?? {}) as RequestConfig<Yasqe>;
+  return (conf ?? {}) as RequestConfig<IYasqe>;
 }
-// type callback = AjaxConfig.callbacks['complete'];
-export function getAjaxConfig(
-  yasqe: Yasqe,
-  _config: Partial<Config["requestConfig"]> = {},
-): PopulatedAjaxConfig | undefined {
-  const config: RequestConfig<Yasqe> = merge(
+
+export function getAjaxConfig(yasqe: IYasqe, _config?: YasqeAjaxConfig): PopulatedAjaxConfig | undefined {
+  const config: RequestConfig<IYasqe> = merge(
     {},
-    getRequestConfigSettings(yasqe, yasqe.config.requestConfig),
+    getRequestConfigSettings(yasqe, yasqe.config.requestConfig as YasqeAjaxConfig),
     getRequestConfigSettings(yasqe, _config),
   );
   if (!config.endpoint || config.endpoint.length == 0) return; // nothing to query!
 
-  var queryMode = yasqe.getQueryMode();
-  /**
-   * initialize ajax config
-   */
+  const queryMode = yasqe.getQueryMode();
   const endpoint = isFunction(config.endpoint) ? config.endpoint(yasqe) : config.endpoint;
-  var reqMethod: "GET" | "POST" =
+  const reqMethod: "GET" | "POST" =
     queryMode == "update" ? "POST" : isFunction(config.method) ? config.method(yasqe) : config.method;
   const headers = isFunction(config.headers) ? config.headers(yasqe) : config.headers;
-  // console.log({headers})
   const withCredentials = isFunction(config.withCredentials) ? config.withCredentials(yasqe) : config.withCredentials;
   return {
     reqMethod,
@@ -46,12 +53,9 @@ export function getAjaxConfig(
     accept: getAcceptHeader(yasqe, config),
     withCredentials,
   };
-  /**
-   * merge additional request headers
-   */
 }
 
-export async function executeQuery(yasqe: Yasqe, config?: YasqeAjaxConfig): Promise<any> {
+export async function executeQuery(yasqe: IYasqe, config?: YasqeAjaxConfig): Promise<any> {
   const queryStart = Date.now();
   try {
     yasqe.emit("queryBefore", config);
@@ -120,13 +124,12 @@ export async function executeQuery(yasqe: Yasqe, config?: YasqeAjaxConfig): Prom
   }
 }
 
-export type RequestArgs = { [argName: string]: string | string[] };
-export function getUrlArguments(yasqe: Yasqe, _config: Config["requestConfig"]): RequestArgs {
-  var queryMode = yasqe.getQueryMode();
+export function getUrlArguments(yasqe: IYasqe, _config?: YasqeAjaxConfig): RequestArgs {
+  const queryMode = yasqe.getQueryMode();
 
-  var data: RequestArgs = {};
-  const config: RequestConfig<Yasqe> = getRequestConfigSettings(yasqe, _config);
-  var queryArg = isFunction(config.queryArgument) ? config.queryArgument(yasqe) : config.queryArgument;
+  const data: RequestArgs = {};
+  const config: RequestConfig<IYasqe> = getRequestConfigSettings(yasqe, _config);
+  let queryArg = isFunction(config.queryArgument) ? config.queryArgument(yasqe) : config.queryArgument;
   if (!queryArg) queryArg = yasqe.getQueryMode();
   data[queryArg] = config.adjustQueryBeforeRequest ? config.adjustQueryBeforeRequest(yasqe) : yasqe.getValue();
   /**
@@ -134,7 +137,7 @@ export function getUrlArguments(yasqe: Yasqe, _config: Config["requestConfig"]):
    */
   const namedGraphs = isFunction(config.namedGraphs) ? config.namedGraphs(yasqe) : config.namedGraphs;
   if (namedGraphs && namedGraphs.length > 0) {
-    let argName = queryMode === "query" ? "named-graph-uri" : "using-named-graph-uri";
+    const argName = queryMode === "query" ? "named-graph-uri" : "using-named-graph-uri";
     data[argName] = namedGraphs;
   }
   /**
@@ -142,7 +145,7 @@ export function getUrlArguments(yasqe: Yasqe, _config: Config["requestConfig"]):
    */
   const defaultGraphs = isFunction(config.defaultGraphs) ? config.defaultGraphs(yasqe) : config.defaultGraphs;
   if (defaultGraphs && defaultGraphs.length > 0) {
-    let argName = queryMode == "query" ? "default-graph-uri" : "using-graph-uri";
+    const argName = queryMode == "query" ? "default-graph-uri" : "using-graph-uri";
     data[argName] = defaultGraphs;
   }
 
@@ -161,13 +164,14 @@ export function getUrlArguments(yasqe: Yasqe, _config: Config["requestConfig"]):
 
   return data;
 }
-export function getAcceptHeader(yasqe: Yasqe, _config: Config["requestConfig"]) {
-  const config: RequestConfig<Yasqe> = getRequestConfigSettings(yasqe, _config);
-  var acceptHeader = null;
+
+export function getAcceptHeader(yasqe: IYasqe, _config?: YasqeAjaxConfig) {
+  const config: RequestConfig<IYasqe> = getRequestConfigSettings(yasqe, _config);
+  let acceptHeader = null;
   if (yasqe.getQueryMode() == "update") {
     acceptHeader = isFunction(config.acceptHeaderUpdate) ? config.acceptHeaderUpdate(yasqe) : config.acceptHeaderUpdate;
   } else {
-    var qType = yasqe.getQueryType();
+    const qType = yasqe.getQueryType();
     if (qType == "DESCRIBE" || qType == "CONSTRUCT") {
       acceptHeader = isFunction(config.acceptHeaderGraph) ? config.acceptHeaderGraph(yasqe) : config.acceptHeaderGraph;
     } else {
@@ -178,8 +182,9 @@ export function getAcceptHeader(yasqe: Yasqe, _config: Config["requestConfig"]) 
   }
   return acceptHeader;
 }
-export function getAsCurlString(yasqe: Yasqe, _config?: Config["requestConfig"]) {
-  let ajaxConfig = getAjaxConfig(yasqe, getRequestConfigSettings(yasqe, _config));
+
+export function getAsCurlString(yasqe: IYasqe, _config?: YasqeAjaxConfig): string {
+  const ajaxConfig = getAjaxConfig(yasqe, getRequestConfigSettings(yasqe, _config));
   if (!ajaxConfig) return "";
   let url = ajaxConfig.url;
   if (ajaxConfig.url.indexOf("http") !== 0) {

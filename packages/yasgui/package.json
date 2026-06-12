@@ -35,7 +35,6 @@
   "dependencies": {
     "@tarekraafat/autocomplete.js": "^7.2.0",
     "@zazuko/yasgui-utils": "^4.6.1",
-    "@zazuko/yasqe": "^4.6.1",
     "@zazuko/yasr": "^4.6.1",
     "autosuggest-highlight": "^3.1.1",
     "blueimp-md5": "^2.12.0",

@@ -11,23 +11,20 @@ import { default as Tab, PersistedJson as PersistedTabJson } from "./Tab";
 import { EndpointSelectConfig, CatalogueItem } from "./endpointSelect";
 import * as shareLink from "./linkUtils";
 import TabElements from "./TabElements";
-import { default as Yasqe, PartialConfig as YasqeConfig, RequestConfig } from "@zazuko/yasqe";
 import { default as Yasr, Config as YasrConfig } from "@zazuko/yasr";
 import { addClass, removeClass } from "@zazuko/yasgui-utils";
-import type { DeepPartial } from "@zazuko/yasgui-utils";
+import type { DeepPartial, IYasqe, YasqeFactory, RequestConfig } from "@zazuko/yasgui-utils";
 import "./index.scss";
 import "./darkmode.css";
 import "@zazuko/yasr/src/scss/global.scss";
 if (window) {
-  //We're storing yasqe and yasr as a member of Yasgui, but _also_ in the window
+  //We're storing yasr as a member of Yasgui, but _also_ in the window
   //That way, we dont have to tweak e.g. pro plugins to register themselves to both
   //Yasgui.Yasr _and_ Yasr.
-  if (Yasqe) (window as any).Yasqe = Yasqe;
   if (Yasr) (window as any).Yasr = Yasr;
 }
-export { qlueLs } from "@zazuko/yasqe";
 export type YasguiRequestConfig = Omit<RequestConfig<Yasgui>, "adjustQueryBeforeRequest"> & {
-  adjustQueryBeforeRequest: RequestConfig<Yasqe>["adjustQueryBeforeRequest"];
+  adjustQueryBeforeRequest: RequestConfig<any>["adjustQueryBeforeRequest"];
 };
 export interface Config<EndpointObject extends CatalogueItem = CatalogueItem> {
   /**
@@ -46,16 +43,18 @@ export interface Config<EndpointObject extends CatalogueItem = CatalogueItem> {
   persistenceLabelConfig: string;
   persistenceLabelResponse: string;
   persistencyExpire: number;
-  yasqe: YasqeConfig;
+  /**
+   * The editor factory. Yasgui is editor-independent: the consumer imports an editor
+   * (e.g. `@zazuko/yasqe` for Monaco or `@zazuko/yasqe-codemirror` for CodeMirror 6) and supplies
+   * a factory that builds it into `parent`, given the per-tab config Yasgui injects. Wire any
+   * editor-specific options (theme, language server, ...) inside the factory:
+   *   yasqe: (parent, conf) => new Yasqe(parent, { ...conf, lsp: { client } })
+   */
+  yasqe: YasqeFactory;
   yasr: YasrConfig;
   requestConfig: YasguiRequestConfig;
   contextMenuContainer: HTMLElement | undefined;
   nonSslDomain?: string;
-  /**
-   * Language server for the editor, provided by the consumer (yasgui/yasqe are LS-agnostic).
-   * A ready `Worker` or a factory returning one. Forwarded to the shared Yasqe instance.
-   */
-  languageServerWorker?: Worker | (() => Worker | Promise<Worker>);
   /**
    * Called whenever the active SPARQL endpoint changes (on load, tab switch, or endpoint edit),
    * with this Yasgui instance and the new endpoint. Defined once here, it applies to every tab.
@@ -107,9 +106,9 @@ export class Yasgui extends EventEmitter {
   public tabPanelsEl: HTMLDivElement;
   public config: Config;
   public persistentConfig: PersistentConfig;
-  // Single shared Monaco editor (the monaco-vscode API can only be initialized once per page).
+  // Single shared editor instance, built by the consumer-supplied `config.yasqe` factory.
   // Tabs share this instance and swap its content/endpoint on activation via syncEditorsWithTab.
-  public yasqe: Yasqe | undefined;
+  public yasqe: IYasqe | undefined;
   private yasqeWrapperEl: HTMLDivElement | undefined;
   // The tab that initiated the in-flight query, so async query events route back to it even if the
   // user switches tabs in the meantime.
@@ -187,25 +186,24 @@ export class Yasgui extends EventEmitter {
       }
     }
   }
-  /** Create the single shared Monaco editor and route its events to the active tab. */
+  /** Build the single shared editor (via the consumer factory) and route its events to the active tab. */
   private initGlobalYasqe() {
+    if (typeof this.config.yasqe !== "function") {
+      throw new Error(
+        "Yasgui is editor-independent: import an editor (e.g. @zazuko/yasqe or @zazuko/yasqe-codemirror) and " +
+          "pass it as the `yasqe` factory, e.g. new Yasgui(el, { yasqe: (parent, conf) => new Yasqe(parent, conf) })",
+      );
+    }
     this.yasqeWrapperEl = document.createElement("div");
-    const yasqeConf: YasqeConfig = {
-      ...this.config.yasqe,
+    // Per-tab config Yasgui injects into the editor. Editor-specific options (theme, language
+    // server, ...) are the consumer's responsibility, wired inside their factory.
+    const yasqeConf = {
       persistenceId: null, // yasgui handles persistent storing, per tab
       consumeShareLink: null, // handled by the parent yasgui instance, not yasqe
       createShareableLink: () => this.getActiveTab()?.getShareableLink() || "",
       requestConfig: () => (this.getActiveTab()?.getProcessedRequestConfig() ?? {}) as any,
-      languageServerWorker: this.config.languageServerWorker,
-      // Once the language client is ready, notify for the active tab endpoint
-      onLanguageClientReady: (languageClient, yasqe) => {
-        // Yasgui overwrites the consumer defined yasqe.onLanguageClientReady, so chain back to it
-        this.config.yasqe?.onLanguageClientReady?.(languageClient, yasqe);
-        const endpoint = this.getActiveTab()?.getEndpoint();
-        if (endpoint) this.emitEndpointChange(endpoint);
-      },
     };
-    this.yasqe = new Yasqe(this.yasqeWrapperEl, yasqeConf);
+    this.yasqe = this.config.yasqe(this.yasqeWrapperEl, yasqeConf);
     this.setupGlobalYasqeListeners();
   }
 
@@ -462,7 +460,6 @@ export class Yasgui extends EventEmitter {
   }
   public static linkUtils = shareLink;
   public static Yasr = Yasr;
-  public static Yasqe = Yasqe;
   public static defaults = initializeDefaults();
   public static corsEnabled: { [endpoint: string]: boolean } = {};
 }

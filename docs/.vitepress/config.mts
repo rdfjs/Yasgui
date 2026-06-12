@@ -18,7 +18,8 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     logo: "/yasgui.png",
     nav: [
-      { text: "Editor", link: "/" },
+      { text: "Monaco Editor", link: "/" },
+      { text: "CodeMirror Editor", link: "/codemirror" },
       { text: "Documentation", link: "/docs/introduction" },
       { text: "API Reference", link: "/api/" },
     ],
@@ -84,6 +85,22 @@ export default defineConfig({
         scss: { api: "modern-compiler" },
       },
     },
+    resolve: {
+      // Deduplicate cm packages so the docs site and qlue-ls client
+      // share one CM6 instance and avoid extension-instance runtime errors.
+      dedupe: [
+        "@codemirror/state",
+        "@codemirror/view",
+        "@codemirror/language",
+        "@codemirror/commands",
+        "@codemirror/search",
+        "@codemirror/autocomplete",
+        "@codemirror/lint",
+        "@codemirror/lsp-client",
+        "@lezer/common",
+        "@lezer/highlight",
+      ],
+    },
     // The qlue-ls language-server worker is compiled here and loads WebAssembly, so it needs
     // the wasm plugin, ES-format workers and the import.meta.url esbuild rewrite (dev pre-bundling).
     plugins: [wasm()],
@@ -93,14 +110,15 @@ export default defineConfig({
     },
     optimizeDeps: {
       esbuildOptions: { plugins: [importMetaUrlPlugin as any] },
-      // The pre-built editor bundles ship their own internal chunks/assets
-      exclude: ["@zazuko/yasgui", "@zazuko/yasqe", "@zazuko/yasr"],
+      // The pre-built editor bundles ship their own internal chunks/assets.
+      exclude: ["@zazuko/yasgui", "@zazuko/yasqe", "@zazuko/yasqe-codemirror", "@zazuko/yasr", "qlue-ls"],
     },
     ssr: {
       // The demo is client-only, so the editor deps must not enter the server bundle
       external: [
         "@zazuko/yasgui",
         "@zazuko/yasqe",
+        "@zazuko/yasqe-codemirror",
         "@zazuko/yasr",
         "@zazuko/yasgui-utils",
         "@matdata/yasgui-graph-plugin",

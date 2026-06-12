@@ -110,20 +110,23 @@ export {};
 ## 4. Mount Yasgui
 
 ```ts
-import Yasgui, { qlueLs } from "@zazuko/yasgui";
+import Yasgui from "@zazuko/yasgui";
+import Yasqe, { qlueLs } from "@zazuko/yasqe";
 import "@zazuko/yasgui/style.css";
 import { createQlueLsWorker } from "./qlue-ls";
 
 const yasgui = new Yasgui(document.getElementById("yasgui")!, {
   requestConfig: { endpoint: "https://sparql.dblp.org/sparql" },
 
-  // Provide the language server worker (forwarded to the shared editor)
-  languageServerWorker: createQlueLsWorker,
-
-  // Push qlue-ls settings once the language client is connected
-  yasqe: {
-    onLanguageClientReady: (languageClient) => qlueLs.configureSettings(languageClient),
-  },
+  // Editor factory: Yasgui is editor-independent, so you build the editor yourself.
+  // Here the Monaco editor (@zazuko/yasqe), wiring in the language server worker and
+  // pushing qlue-ls settings once the language client is connected.
+  yasqe: (parent, conf) =>
+    new Yasqe(parent, {
+      ...conf,
+      languageServerWorker: createQlueLsWorker,
+      onLanguageClientReady: (languageClient) => qlueLs.configureSettings(languageClient),
+    }),
 
   // Fires on load, tab switch, and endpoint edits, defined once, applies to all tabs.
   // Register the active endpoint as the default backend so completions resolve against it.
@@ -131,6 +134,12 @@ const yasgui = new Yasgui(document.getElementById("yasgui")!, {
     qlueLs.configureBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
 });
 ```
+
+::: tip CodeMirror instead of Monaco
+The factory is also where you choose the editor implementation. To use the CodeMirror 6 editor,
+import `@zazuko/yasqe-codemirror` instead and pass it an LSP client via `lsp: { client }` (see
+[Language server](./language-server)).
+:::
 
 That is the same setup that powers the [live demo](/). From here:
 

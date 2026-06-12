@@ -1,6 +1,6 @@
 import { Config } from "./";
 import Yasr from "@zazuko/yasr";
-import { default as Yasqe } from "@zazuko/yasqe";
+import { defaultRequestConfig, YasqeFactory } from "@zazuko/yasgui-utils";
 import { CatalogueItem } from "./endpointSelect";
 
 export default function initialize(): Config<CatalogueItem> {
@@ -26,7 +26,9 @@ export default function initialize(): Config<CatalogueItem> {
     persistencyExpire: 60 * 60 * 24 * 30,
     persistenceLabelResponse: "response",
     persistenceLabelConfig: "config",
-    yasqe: Yasqe.defaults,
+    // No default editor: Yasgui is editor-independent and the consumer must supply a `yasqe`
+    // factory (e.g. (parent, conf) => new Yasqe(parent, conf)). Validated in the constructor.
+    yasqe: undefined as unknown as YasqeFactory,
     yasr: Yasr.defaults,
     endpointCatalogueOptions: {
       getData: () => {
@@ -82,7 +84,7 @@ export default function initialize(): Config<CatalogueItem> {
     copyEndpointOnNewTab: true,
     populateFromUrl: true,
     autoAddOnInit: true,
-    requestConfig: Yasqe.defaults.requestConfig,
+    requestConfig: { ...defaultRequestConfig },
     contextMenuContainer: undefined,
   };
 }

@@ -5,14 +5,27 @@
 import { EventEmitter } from "events";
 import { Storage as YStorage } from "@zazuko/yasgui-utils";
 import * as queryString from "query-string";
-import { drawSvgStringAsElement, addClass, removeClass } from "@zazuko/yasgui-utils";
+import {
+  drawSvgStringAsElement,
+  addClass,
+  removeClass,
+  getPrefixesFromQuery,
+  getQueryType,
+  getQueryMode,
+  // SPARQL request handling is shared across editors and lives in utils.
+  executeQuery,
+  getAjaxConfig,
+  getUrlArguments,
+  getAcceptHeader,
+  getAsCurlString,
+} from "@zazuko/yasgui-utils";
 import { merge } from "lodash-es";
-import type { DeepPartial } from "@zazuko/yasgui-utils";
+import type { DeepPartial, QueryType, RequestConfig, YasqeAjaxConfig, RequestArgs } from "@zazuko/yasgui-utils";
+// Shared, editor-agnostic types live in utils so the Monaco and CodeMirror editors stay in sync.
+export type { QueryType, RequestConfig, PlainRequestConfig } from "@zazuko/yasgui-utils";
 
-import * as Sparql from "./sparql";
 import * as imgs from "./imgs";
 import getDefaults from "./defaults";
-import { YasqeAjaxConfig } from "./sparql";
 export { sparqlThemeDark, sparqlThemeLight } from "./editor/sparqlTheme";
 import { MonacoVscodeApiWrapper } from "monaco-languageclient/vscodeApiWrapper";
 import { LanguageClientWrapper } from "monaco-languageclient/lcwrapper";
@@ -218,14 +231,7 @@ export class Yasqe extends EventEmitter {
    * Used by Yasr to resolve prefixed names in results.
    */
   public getPrefixesFromQuery(): { [prefix: string]: string } {
-    const prefixes: { [prefix: string]: string } = {};
-    const re = /(?:^|\s)PREFIX\s+([a-zA-Z0-9._-]*)\s*:\s*<([^>]*)>/gi;
-    const query = this.getValue();
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(query)) !== null) {
-      prefixes[m[1]] = m[2];
-    }
-    return prefixes;
+    return getPrefixesFromQuery(this.getValue());
   }
 
   /** Resolve the consumer-provided language server worker (a Worker instance or a factory). */
@@ -616,27 +622,11 @@ export class Yasqe extends EventEmitter {
    * Defaults to "SELECT" when nothing matches (e.g. an empty or still-typed query).
    */
   public getQueryType(): QueryType {
-    const withoutComments = this.getValue().replace(/(^|\s)#[^\n]*/g, " ");
-    // Drop the leading PREFIX/BASE prologue to reach the actual query/update keyword.
-    const body = withoutComments.replace(/(\s|^)(PREFIX\s+[^\s]*\s*:\s*<[^>]*>|BASE\s+<[^>]*>)/gi, " ");
-    const m = body.match(/\b(SELECT|CONSTRUCT|ASK|DESCRIBE|INSERT|DELETE|LOAD|CLEAR|CREATE|DROP|COPY|MOVE|ADD)\b/i);
-    return m ? (m[1].toUpperCase() as QueryType) : "SELECT";
+    // Defaults to "SELECT" when nothing matches (e.g. an empty or still-typed query).
+    return getQueryType(this.getValue()) ?? "SELECT";
   }
   public getQueryMode(): "update" | "query" {
-    switch (this.getQueryType()) {
-      case "INSERT":
-      case "DELETE":
-      case "LOAD":
-      case "CLEAR":
-      case "CREATE":
-      case "DROP":
-      case "COPY":
-      case "MOVE":
-      case "ADD":
-        return "update";
-      default:
-        return "query";
-    }
+    return getQueryMode(this.getQueryType());
   }
 
   /**
@@ -682,11 +672,11 @@ export class Yasqe extends EventEmitter {
   /**
    * Querying
    */
-  public query(config?: Sparql.YasqeAjaxConfig) {
+  public query(config?: YasqeAjaxConfig) {
     if (this.config.queryingDisabled) return Promise.reject("Querying is disabled.");
     // Abort previous request
     this.abortQuery();
-    return Sparql.executeQuery(this, config);
+    return executeQuery(this, config);
   }
 
   public getUrlParams() {
@@ -718,8 +708,13 @@ export class Yasqe extends EventEmitter {
     }
   }
 
-  public getAsCurlString(config?: Sparql.YasqeAjaxConfig): string {
-    return Sparql.getAsCurlString(this, config);
+  public getAsCurlString(config?: YasqeAjaxConfig): string {
+    return getAsCurlString(this, config);
+  }
+
+  /** Build the SPARQL request arguments for the current query against the given request config. */
+  public getUrlArguments(requestConfig: YasqeAjaxConfig): RequestArgs {
+    return getUrlArguments(this, requestConfig as any);
   }
 
   public abortQuery() {
@@ -763,7 +758,7 @@ export class Yasqe extends EventEmitter {
   /**
    * Statics
    */
-  static Sparql = Sparql;
+  static Sparql = { executeQuery, getAjaxConfig, getUrlArguments, getAcceptHeader, getAsCurlString };
   static clearStorage() {
     const storage = new YStorage(Yasqe.storageNamespace);
     storage.removeNamespace();
@@ -771,39 +766,6 @@ export class Yasqe extends EventEmitter {
   static defaults = getDefaults();
 }
 
-/** The SPARQL query/update forms, as returned by {@link Yasqe.getQueryType}. */
-export type QueryType =
-  | "SELECT"
-  | "CONSTRUCT"
-  | "ASK"
-  | "DESCRIBE"
-  | "INSERT"
-  | "DELETE"
-  | "LOAD"
-  | "CLEAR"
-  | "CREATE"
-  | "DROP"
-  | "COPY"
-  | "MOVE"
-  | "ADD";
-
-export interface RequestConfig<Y> {
-  queryArgument: string | ((yasqe: Y) => string) | undefined;
-  endpoint: string | ((yasqe: Y) => string);
-  method: "POST" | "GET" | ((yasqe: Y) => "POST" | "GET");
-  acceptHeaderGraph: string | ((yasqe: Y) => string);
-  acceptHeaderSelect: string | ((yasqe: Y) => string);
-  acceptHeaderUpdate: string | ((yasqe: Y) => string);
-  namedGraphs: string[] | ((yasqe: Y) => string[]);
-  defaultGraphs: string[] | ((yasqe: Y) => string[]);
-  args: Array<{ name: string; value: string }> | ((yasqe: Y) => Array<{ name: string; value: string }>);
-  headers: { [key: string]: string } | ((yasqe: Y) => { [key: string]: string });
-  withCredentials: boolean | ((yasqe: Y) => boolean);
-  adjustQueryBeforeRequest: ((yasqe: Y) => string) | false;
-}
-export type PlainRequestConfig = {
-  [K in keyof RequestConfig<any>]: Exclude<RequestConfig<any>[K], Function>;
-};
 export type PartialConfig = DeepPartial<Config>;
 export interface Config {
   /** Initial query value. */

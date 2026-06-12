@@ -2,7 +2,8 @@ import { EventEmitter } from "events";
 import { addClass, removeClass, getAsValue } from "@zazuko/yasgui-utils";
 import { TabListEl } from "./TabElements";
 import TabPanel from "./TabPanel";
-import { default as Yasqe, RequestConfig, PlainRequestConfig } from "@zazuko/yasqe";
+import { defaultQueryValue } from "@zazuko/yasgui-utils";
+import type { IYasqe, RequestConfig, PlainRequestConfig } from "@zazuko/yasgui-utils";
 import { default as Yasr, Parser, Config as YasrConfig, PersistentConfig as YasrPersistentConfig } from "@zazuko/yasr";
 import { mapValues, eq, mergeWith, words, deburr, invert } from "lodash-es";
 import * as shareLink from "./linkUtils";
@@ -50,9 +51,9 @@ export interface Tab {
 export class Tab extends EventEmitter {
   private persistentJson: PersistedJson;
   public yasgui: Yasgui;
-  // The Monaco editor is a single shared instance owned by Yasgui (the monaco-vscode API can only
-  // be initialized once per page). Tabs read it through this getter and swap content on activation.
-  private get yasqe(): Yasqe | undefined {
+  // The editor is a single shared instance owned by Yasgui (built by the consumer-supplied
+  // factory). Tabs read it through this getter and swap content on activation.
+  private get yasqe(): IYasqe | undefined {
     return this.yasgui.yasqe;
   }
   private yasr: Yasr | undefined;
@@ -345,11 +346,11 @@ export class Tab extends EventEmitter {
     }
     return processedReqConfig as PlainRequestConfig;
   }
-  handleYasqeBlur = (yasqe: Yasqe) => {
+  handleYasqeBlur = (yasqe: IYasqe) => {
     this.persistentJson.yasqe.value = yasqe.getValue();
     this.emit("change", this, this.persistentJson);
   };
-  handleYasqeQuery = (yasqe: Yasqe) => {
+  handleYasqeQuery = (yasqe: IYasqe) => {
     //the blur event might not have fired (e.g. when pressing ctrl-enter). So, we'd like to persist the query as well if needed
     if (yasqe.getValue() !== this.persistentJson.yasqe.value) {
       this.persistentJson.yasqe.value = yasqe.getValue();
@@ -363,17 +364,17 @@ export class Tab extends EventEmitter {
   handleYasqeQueryBefore = () => {
     this.emit("queryBefore", this);
   };
-  handleYasqeResize = (_yasqe: Yasqe, newSize: string) => {
+  handleYasqeResize = (_yasqe: IYasqe, newSize: string) => {
     this.persistentJson.yasqe.editorHeight = newSize;
     this.emit("change", this, this.persistentJson);
   };
-  handleAutocompletionShown = (_yasqe: Yasqe, widget: string) => {
+  handleAutocompletionShown = (_yasqe: IYasqe, widget: string) => {
     this.emit("autocompletionShown", this, widget);
   };
-  handleAutocompletionClose = (_yasqe: Yasqe) => {
+  handleAutocompletionClose = (_yasqe: IYasqe) => {
     this.emit("autocompletionClose", this);
   };
-  handleQueryResponse = (_yasqe: Yasqe, response: any, duration: number) => {
+  handleQueryResponse = (_yasqe: IYasqe, response: any, duration: number) => {
     this.emit("queryResponse", this);
     if (!this.yasr) throw new Error("Resultset visualizer not initialized. Cannot draw results");
     this.yasr.setResponse(response, duration);
@@ -410,7 +411,7 @@ export class Tab extends EventEmitter {
         if (this.yasqe) {
           return shareLink.appendArgsToUrl(
             this.getEndpoint(),
-            Yasqe.Sparql.getUrlArguments(this.yasqe, this.persistentJson.requestConfig as RequestConfig<any>),
+            this.yasqe.getUrlArguments(this.persistentJson.requestConfig as RequestConfig<any>),
           );
         }
       },
@@ -455,7 +456,7 @@ export class Tab extends EventEmitter {
   public static getDefaults(yasgui?: Yasgui): PersistedJson {
     return {
       yasqe: {
-        value: (yasgui ? yasgui.config.yasqe.value : Yasgui.defaults.yasqe.value) ?? "",
+        value: defaultQueryValue,
       },
       yasr: {
         response: undefined,

@@ -25,9 +25,12 @@
   },
   "dependencies": {
     "dompurify": "^3.2.4",
+    "lodash-es": "^4.18.1",
+    "query-string": "^6.10.1",
     "store": "^2.0.12"
   },
   "devDependencies": {
+    "@types/lodash-es": "^4.17.3",
     "@types/node": "^22.5.4"
   },
   "publishConfig": {

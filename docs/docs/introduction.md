@@ -7,8 +7,9 @@ independently:
 | Package | npm | What it is |
 | --- | --- | --- |
 | **Yasqe** | `@zazuko/yasqe` | The SPARQL query **editor** (Monaco-based, with optional LSP) |
+| **Yasqe (CodeMirror)** | `@zazuko/yasqe-codemirror` | Alternative SPARQL **editor** built on CodeMirror 6 (takes an LSP client) |
 | **Yasr** | `@zazuko/yasr` | The SPARQL **result** viewer (table, response, geo, …) |
-| **Yasgui** | `@zazuko/yasgui` | The full **app**: tabs, endpoint selector, Yasqe + Yasr wired together |
+| **Yasgui** | `@zazuko/yasgui` | The full **app**: tabs, endpoint selector, editor + Yasr wired together |
 
 Try it now on the [live demo](/). Then head to [Getting started](./getting-started) to embed it in
 your own app.
