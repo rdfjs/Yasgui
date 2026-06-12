@@ -75,6 +75,7 @@
     "printWidth": 120
   },
   "dependencies": {
-    "qlue-ls": "^2.8.0"
+    "qlue-ls": "^2.8.0",
+    "swls-wasm": "^0.3.1"
   }
 }

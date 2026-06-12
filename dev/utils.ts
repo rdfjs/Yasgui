@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import QlueLsWorker from "./qluels.worker?worker";
+import SwlsWorker from "./swls.worker?worker";
 
 /**
  * Create a qlue-ls language-server worker and resolve once its WASM is initialized.
@@ -11,6 +12,16 @@ export function createQlueLsWorker(): Promise<Worker> {
     worker.onmessage = (event) => {
       if (event.data?.type === "ready") resolve(worker);
     };
+  });
+}
+
+export function createSwlsWorker(): Promise<Worker> {
+  return new Promise((resolve) => {
+    const worker = new SwlsWorker({ name: "qlue-ls" });
+    // worker.onmessage = (event) => {
+    //   if (event.data?.type === "ready") resolve(worker);
+    // };
+    resolve(worker);
   });
 }
 
