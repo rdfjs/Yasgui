@@ -2,7 +2,8 @@ import { EventEmitter } from "events";
 import { addClass, removeClass, getAsValue } from "@zazuko/yasgui-utils";
 import { TabListEl } from "./TabElements";
 import TabPanel from "./TabPanel";
-import { default as Yasqe, RequestConfig, PlainRequestConfig, PartialConfig as YasqeConfig } from "@zazuko/yasqe";
+import { defaultQueryValue } from "@zazuko/yasgui-utils";
+import type { IYasqe, RequestConfig, PlainRequestConfig } from "@zazuko/yasgui-utils";
 import { default as Yasr, Parser, Config as YasrConfig, PersistentConfig as YasrPersistentConfig } from "@zazuko/yasr";
 import { mapValues, eq, mergeWith, words, deburr, invert } from "lodash-es";
 import * as shareLink from "./linkUtils";
@@ -50,7 +51,11 @@ export interface Tab {
 export class Tab extends EventEmitter {
   private persistentJson: PersistedJson;
   public yasgui: Yasgui;
-  private yasqe: Yasqe | undefined;
+  // The editor is a single shared instance owned by Yasgui (built by the consumer-supplied
+  // factory). Tabs read it through this getter and swap content on activation.
+  private get yasqe(): IYasqe | undefined {
+    return this.yasgui.yasqe;
+  }
   private yasr: Yasr | undefined;
   private rootEl: HTMLDivElement | undefined;
   private controlBarEl: HTMLDivElement | undefined;
@@ -104,7 +109,6 @@ export class Tab extends EventEmitter {
     this.rootEl.appendChild(editorWrapper);
     this.rootEl.appendChild(this.yasrWrapperEl);
     this.initControlbar();
-    this.initYasqe();
     this.initYasr();
     this.yasgui._setPanel(this.persistentJson.id, this.rootEl);
   }
@@ -115,6 +119,8 @@ export class Tab extends EventEmitter {
     this.draw();
     addClass(this.rootEl, "active");
     this.yasgui.tabElements.selectTab(this.persistentJson.id);
+    // Move the single shared Monaco editor into this tab's wrapper and load this tab's content/endpoint
+    if (this.yasqeWrapperEl) this.yasgui.syncEditorsWithTab(this, this.yasqeWrapperEl);
     if (this.yasqe) {
       this.yasqe.refresh();
       if (this.yasgui.config.autofocus) this.yasqe.focus();
@@ -147,17 +153,14 @@ export class Tab extends EventEmitter {
     delete this.yasgui._tabs[this.persistentJson.id];
   }
   public getQuery() {
-    if (!this.yasqe) {
-      throw new Error("Cannot get value from uninitialized editor");
-    }
-    return this.yasqe?.getValue();
+    // When this tab is the one currently shown in the shared editor, read the live value;
+    // otherwise return the persisted value (the editor is showing another tab).
+    if (this.yasgui.getTab() === this && this.yasqe) return this.yasqe.getValue();
+    return this.persistentJson.yasqe.value;
   }
   public setQuery(query: string) {
-    if (!this.yasqe) {
-      throw new Error("Cannot set value for uninitialized editor");
-    }
-    this.yasqe.setValue(query);
     this.persistentJson.yasqe.value = query;
+    if (this.yasgui.getTab() === this) this.yasqe?.setValue(query);
     this.emit("change", this, this.persistentJson);
     return this;
   }
@@ -227,6 +230,9 @@ export class Tab extends EventEmitter {
     if (this.endpointSelect instanceof EndpointSelect) {
       this.endpointSelect.setEndpoint(endpoint, endpointHistory);
     }
+    // Notify of the endpoint change, but only when this tab is the one currently shown (otherwise
+    // we'd repoint the shared editor while it displays another tab)
+    if (endpoint && this.yasgui.getTab() === this) this.yasgui.emitEndpointChange(endpoint);
     return this;
   }
   public getEndpoint(): string {
@@ -300,90 +306,51 @@ export class Tab extends EventEmitter {
     return config;
   }
 
-  private initYasqe() {
-    const yasqeConf: Partial<YasqeConfig> = {
-      ...this.yasgui.config.yasqe,
-      value: this.persistentJson.yasqe.value,
-      editorHeight: this.persistentJson.yasqe.editorHeight ? this.persistentJson.yasqe.editorHeight : undefined,
-      persistenceId: null, //yasgui handles persistent storing
-      consumeShareLink: null, //not handled by this tab, but by parent yasgui instance
-      createShareableLink: () => this.getShareableLink(),
-      requestConfig: () => {
-        const processedReqConfig: YasguiRequestConfig = {
-          //setting defaults
-          //@ts-ignore
-          acceptHeaderGraph: "text/turtle",
-          //@ts-ignore
-          acceptHeaderSelect: "application/sparql-results+json",
-          ...mergeWith(
-            {},
-            this.persistentJson.requestConfig,
-            this.getStaticRequestConfig(),
-            function customizer(objValue, srcValue) {
-              if (Array.isArray(objValue) || Array.isArray(srcValue)) {
-                return [...(objValue || []), ...(srcValue || [])];
-              }
-            },
-          ),
-          //Passing this manually. Dont want to use our own persistentJson, as that's flattened exclude functions
-          //The adjustQueryBeforeRequest is meant to be a function though, so let's copy that as is
-          adjustQueryBeforeRequest: this.yasgui.config.requestConfig.adjustQueryBeforeRequest,
-        };
-        if (this.yasgui.config.corsProxy && !Yasgui.corsEnabled[this.getEndpoint()]) {
-          return {
-            ...processedReqConfig,
-            args: [
-              ...(Array.isArray(processedReqConfig.args) ? processedReqConfig.args : []),
-              { name: "endpoint", value: this.getEndpoint() },
-              { name: "method", value: this.persistentJson.requestConfig.method },
-            ],
-            method: "POST",
-            endpoint: this.yasgui.config.corsProxy,
-          } as PlainRequestConfig;
-        }
-        return processedReqConfig as PlainRequestConfig;
-      },
+  /**
+   * Build the request config for this tab. Used by the shared YASQE instance (via
+   * Yasgui.updateEditorsContent) when this tab becomes active, so its query runs against this
+   * tab's endpoint/headers.
+   */
+  public getProcessedRequestConfig(): PlainRequestConfig {
+    const processedReqConfig: YasguiRequestConfig = {
+      //setting defaults
+      //@ts-ignore
+      acceptHeaderGraph: "text/turtle",
+      //@ts-ignore
+      acceptHeaderSelect: "application/sparql-results+json",
+      ...mergeWith(
+        {},
+        this.persistentJson.requestConfig,
+        this.getStaticRequestConfig(),
+        function customizer(objValue, srcValue) {
+          if (Array.isArray(objValue) || Array.isArray(srcValue)) {
+            return [...(objValue || []), ...(srcValue || [])];
+          }
+        },
+      ),
+      //Passing this manually. Dont want to use our own persistentJson, as that's flattened exclude functions
+      //The adjustQueryBeforeRequest is meant to be a function though, so let's copy that as is
+      adjustQueryBeforeRequest: this.yasgui.config.requestConfig.adjustQueryBeforeRequest,
     };
-    if (!yasqeConf.hintConfig) {
-      yasqeConf.hintConfig = {};
+    if (this.yasgui.config.corsProxy && !Yasgui.corsEnabled[this.getEndpoint()]) {
+      return {
+        ...processedReqConfig,
+        args: [
+          ...(Array.isArray(processedReqConfig.args) ? processedReqConfig.args : []),
+          { name: "endpoint", value: this.getEndpoint() },
+          { name: "method", value: this.persistentJson.requestConfig.method },
+        ],
+        method: "POST",
+        endpoint: this.yasgui.config.corsProxy,
+      } as PlainRequestConfig;
     }
-    if (!yasqeConf.hintConfig.container) {
-      yasqeConf.hintConfig.container = this.yasgui.rootEl;
-    }
-    if (!this.yasqeWrapperEl) {
-      throw new Error("Expected a wrapper element before instantiating yasqe");
-    }
-    this.yasqe = new Yasqe(this.yasqeWrapperEl, yasqeConf);
-
-    this.yasqe.on("blur", this.handleYasqeBlur);
-    this.yasqe.on("query", this.handleYasqeQuery);
-    this.yasqe.on("queryBefore", this.handleYasqeQueryBefore);
-    this.yasqe.on("queryAbort", this.handleYasqeQueryAbort);
-    this.yasqe.on("resize", this.handleYasqeResize);
-
-    this.yasqe.on("autocompletionShown", this.handleAutocompletionShown);
-    this.yasqe.on("autocompletionClose", this.handleAutocompletionClose);
-
-    this.yasqe.on("queryResponse", this.handleQueryResponse);
+    return processedReqConfig as PlainRequestConfig;
   }
-  private destroyYasqe() {
-    // As Yasqe extends of CM instead of eventEmitter, it doesn't expose the removeAllListeners function, so we should unregister all events manually
-    this.yasqe?.off("blur", this.handleYasqeBlur);
-    this.yasqe?.off("query", this.handleYasqeQuery);
-    this.yasqe?.off("queryAbort", this.handleYasqeQueryAbort);
-    this.yasqe?.off("resize", this.handleYasqeResize);
-    this.yasqe?.off("autocompletionShown", this.handleAutocompletionShown);
-    this.yasqe?.off("autocompletionClose", this.handleAutocompletionClose);
-    this.yasqe?.off("queryBefore", this.handleYasqeQueryBefore);
-    this.yasqe?.off("queryResponse", this.handleQueryResponse);
-    this.yasqe?.destroy();
-    this.yasqe = undefined;
-  }
-  handleYasqeBlur = (yasqe: Yasqe) => {
+  handleYasqeBlur = (yasqe: IYasqe) => {
     this.persistentJson.yasqe.value = yasqe.getValue();
     this.emit("change", this, this.persistentJson);
   };
-  handleYasqeQuery = (yasqe: Yasqe) => {
+  handleYasqeQuery = (yasqe: IYasqe) => {
     //the blur event might not have fired (e.g. when pressing ctrl-enter). So, we'd like to persist the query as well if needed
     if (yasqe.getValue() !== this.persistentJson.yasqe.value) {
       this.persistentJson.yasqe.value = yasqe.getValue();
@@ -397,17 +364,17 @@ export class Tab extends EventEmitter {
   handleYasqeQueryBefore = () => {
     this.emit("queryBefore", this);
   };
-  handleYasqeResize = (_yasqe: Yasqe, newSize: string) => {
+  handleYasqeResize = (_yasqe: IYasqe, newSize: string) => {
     this.persistentJson.yasqe.editorHeight = newSize;
     this.emit("change", this, this.persistentJson);
   };
-  handleAutocompletionShown = (_yasqe: Yasqe, widget: string) => {
+  handleAutocompletionShown = (_yasqe: IYasqe, widget: string) => {
     this.emit("autocompletionShown", this, widget);
   };
-  handleAutocompletionClose = (_yasqe: Yasqe) => {
+  handleAutocompletionClose = (_yasqe: IYasqe) => {
     this.emit("autocompletionClose", this);
   };
-  handleQueryResponse = (_yasqe: Yasqe, response: any, duration: number) => {
+  handleQueryResponse = (_yasqe: IYasqe, response: any, duration: number) => {
     this.emit("queryResponse", this);
     if (!this.yasr) throw new Error("Resultset visualizer not initialized. Cannot draw results");
     this.yasr.setResponse(response, duration);
@@ -444,7 +411,7 @@ export class Tab extends EventEmitter {
         if (this.yasqe) {
           return shareLink.appendArgsToUrl(
             this.getEndpoint(),
-            Yasqe.Sparql.getUrlArguments(this.yasqe, this.persistentJson.requestConfig as RequestConfig<any>),
+            this.yasqe.getUrlArguments(this.persistentJson.requestConfig as RequestConfig<any>),
           );
         }
       },
@@ -482,12 +449,14 @@ export class Tab extends EventEmitter {
     this.endpointSelect = undefined;
     this.yasr?.destroy();
     this.yasr = undefined;
-    this.destroyYasqe();
+    // The Monaco editor is shared/owned by Yasgui, so a tab must not destroy it. If this tab is the
+    // one currently shown, abort any running query so it doesn't resolve against a closed tab.
+    if (this.yasgui.getTab() === this) this.yasqe?.abortQuery();
   }
   public static getDefaults(yasgui?: Yasgui): PersistedJson {
     return {
       yasqe: {
-        value: yasgui ? yasgui.config.yasqe.value : Yasgui.defaults.yasqe.value,
+        value: defaultQueryValue,
       },
       yasr: {
         response: undefined,

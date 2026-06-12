@@ -1,0 +1,229 @@
+/*
+ * Dark mode for the Yasr results view (buttons, result table, plugins).
+ * Applies both on explicit opt-in (html[data-theme="dark"]) and when the OS/browser prefers dark
+ * and the user hasn't forced light.
+ *
+ * Plain CSS: palette in :root variables; the rule block is repeated under each gate (a media query
+ * and an attribute selector cannot be combined into a single selector).
+ */
+:root {
+  --yr-d-bg: #1e1e1e;
+  --yr-d-surface: #252526;
+  --yr-d-raised: #2d2d30;
+  --yr-d-text: #d4d4d4;
+  --yr-d-muted: #bbbbbb;
+  --yr-d-border: #3e3e3e;
+  --yr-d-link: #4fc3f7;
+  --yr-d-link-hover: #29b6f6;
+  --yr-d-help-bg: #1a3a4a;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  .yasr {
+    color: var(--yr-d-text);
+    background: var(--yr-d-bg);
+
+    a {
+      color: var(--yr-d-link);
+    }
+    a:hover,
+    a:active {
+      color: var(--yr-d-link-hover);
+    }
+
+    .yasr_btnGroup .yasr_btn.selected {
+      border-bottom-color: var(--yr-d-link);
+    }
+    .yasr_btn {
+      color: var(--yr-d-muted);
+      fill: var(--yr-d-muted);
+    }
+    .yasr_btn:not(.disabled):hover {
+      color: var(--yr-d-text);
+      fill: var(--yr-d-text);
+    }
+    .yasr_btn:focus,
+    .yasr_btn.selected {
+      color: var(--yr-d-link);
+      fill: var(--yr-d-link);
+    }
+
+    .yasr_fallback_info:not(:empty) {
+      border-color: var(--yr-d-border);
+      background: var(--yr-d-surface);
+    }
+    .yasr_help_variable {
+      background: var(--yr-d-help-bg);
+      color: var(--yr-d-link);
+    }
+    .yasr_response_chip {
+      color: var(--yr-d-text);
+      background: var(--yr-d-raised);
+    }
+
+    /* Raw response view (CodeMirror 6) ships only a light theme: a glaring white
+       panel in dark mode. Override the editor's CSS variables (set in response/index.ts)
+       to get a grey surface, light-grey gutter and JSON token colors legible on dark. */
+    .yasr_results .cm-editor {
+      --yr-cm-bg: var(--yr-d-surface);
+      --yr-cm-text: var(--yr-d-text);
+      --yr-cm-gutter-bg: var(--yr-d-surface);
+      --yr-cm-gutter-text: var(--yr-d-muted);
+      --yr-cm-property: #9cdcfe;
+      --yr-cm-string: #ce9178;
+      --yr-cm-number: #b5cea8;
+      --yr-cm-atom: #569cd6;
+      border-color: var(--yr-d-border);
+    }
+    /* The overflow fade and "show more" overlay are hardcoded white in the source. */
+    .yasr_results .cm-editor.overflow::before {
+      background: linear-gradient(transparent 0%, rgba(37, 37, 38, 0.67) 75%, var(--yr-d-surface) 100%);
+    }
+    .yasr_results .overlay_content {
+      background: linear-gradient(to right, transparent, var(--yr-d-surface) 5%, var(--yr-d-surface) 95%, transparent 100%);
+    }
+
+    .dataTables_wrapper {
+      color: var(--yr-d-text);
+    }
+    .dataTable {
+      color: var(--yr-d-text);
+    }
+    .dataTable thead tr th {
+      background-color: var(--yr-d-surface);
+      border-color: var(--yr-d-border);
+      color: var(--yr-d-text);
+    }
+    .dataTable tbody tr {
+      background-color: var(--yr-d-bg);
+    }
+    .dataTable tbody tr > td,
+    .dataTable tbody tr > th {
+      border-color: var(--yr-d-border);
+    }
+    .dataTable tbody tr:hover {
+      background-color: var(--yr-d-raised);
+    }
+    div.dataTables_paginate.paging_simple_numbers a .disabled {
+      color: var(--yr-d-muted);
+    }
+    div.dataTables_paginate.paging_simple_numbers a:hover:not(.disabled) {
+      color: #ffffff !important;
+    }
+
+    .tableControls input,
+    .tableControls select {
+      color: var(--yr-d-text);
+      background: var(--yr-d-raised);
+      border-color: var(--yr-d-border);
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    .yasr {
+      color: var(--yr-d-text);
+      background: var(--yr-d-bg);
+
+      a {
+        color: var(--yr-d-link);
+      }
+      a:hover,
+      a:active {
+        color: var(--yr-d-link-hover);
+      }
+
+      .yasr_btnGroup .yasr_btn.selected {
+        border-bottom-color: var(--yr-d-link);
+      }
+      .yasr_btn {
+        color: var(--yr-d-muted);
+        fill: var(--yr-d-muted);
+      }
+      .yasr_btn:not(.disabled):hover {
+        color: var(--yr-d-text);
+        fill: var(--yr-d-text);
+      }
+      .yasr_btn:focus,
+      .yasr_btn.selected {
+        color: var(--yr-d-link);
+        fill: var(--yr-d-link);
+      }
+
+      .yasr_fallback_info:not(:empty) {
+        border-color: var(--yr-d-border);
+        background: var(--yr-d-surface);
+      }
+      .yasr_help_variable {
+        background: var(--yr-d-help-bg);
+        color: var(--yr-d-link);
+      }
+      .yasr_response_chip {
+        color: var(--yr-d-text);
+        background: var(--yr-d-raised);
+      }
+
+      /* Raw response view (CodeMirror 6) ships only a light theme: a glaring white
+         panel in dark mode. Override the editor's CSS variables (set in response/index.ts)
+         to get a grey surface, light-grey gutter and JSON token colors legible on dark. */
+      .yasr_results .cm-editor {
+        --yr-cm-bg: var(--yr-d-surface);
+        --yr-cm-text: var(--yr-d-text);
+        --yr-cm-gutter-bg: var(--yr-d-surface);
+        --yr-cm-gutter-text: var(--yr-d-muted);
+        --yr-cm-property: #9cdcfe;
+        --yr-cm-string: #ce9178;
+        --yr-cm-number: #b5cea8;
+        --yr-cm-atom: #569cd6;
+        border-color: var(--yr-d-border);
+      }
+      /* The overflow fade and "show more" overlay are hardcoded white in the source. */
+      .yasr_results .cm-editor.overflow::before {
+        background: linear-gradient(transparent 0%, rgba(37, 37, 38, 0.67) 75%, var(--yr-d-surface) 100%);
+      }
+      .yasr_results .overlay_content {
+        background: linear-gradient(to right, transparent, var(--yr-d-surface) 5%, var(--yr-d-surface) 95%, transparent 100%);
+      }
+
+      .dataTables_wrapper {
+        color: var(--yr-d-text);
+      }
+      .dataTable {
+        color: var(--yr-d-text);
+      }
+      .dataTable thead tr th {
+        background-color: var(--yr-d-surface);
+        border-color: var(--yr-d-border);
+        color: var(--yr-d-text);
+      }
+      .dataTable tbody tr {
+        background-color: var(--yr-d-bg);
+      }
+      .dataTable tbody tr > td,
+      .dataTable tbody tr > th {
+        border-color: var(--yr-d-border);
+      }
+      .dataTable tbody tr:hover {
+        background-color: var(--yr-d-raised);
+      }
+      div.dataTables_paginate.paging_simple_numbers a .disabled {
+        color: var(--yr-d-muted);
+      }
+      div.dataTables_paginate.paging_simple_numbers a:hover:not(.disabled) {
+        color: #ffffff !important;
+      }
+
+      .tableControls input,
+      .tableControls select {
+        color: var(--yr-d-text);
+        background: var(--yr-d-raised);
+        border-color: var(--yr-d-border);
+      }
+    }
+  }
+}

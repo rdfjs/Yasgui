@@ -93,7 +93,7 @@ export class EndpointSelect extends EventEmitter {
     const clearBtn = document.createElement("button");
     clearBtn.title = "Clear endpoint";
     addClass(clearBtn, "clearEndpointBtn");
-    clearBtn.innerText = "✖";
+    clearBtn.innerText = "\u2716\uFE0E"; // ✖ but monochrome
     clearBtn.addEventListener("click", () => {
       this.inputField.value = "";
       this.inputField.focus();
@@ -157,7 +157,7 @@ export class EndpointSelect extends EventEmitter {
 
             // Remove button
             const removeBtn = document.createElement("button");
-            removeBtn.textContent = "✖";
+            removeBtn.textContent = "\u2716\uFE0E";
             addClass(removeBtn, "removeItem");
             removeBtn.addEventListener("mousedown", (event) => {
               this.history = this.history.filter((item) => item.endpoint !== endpoint);

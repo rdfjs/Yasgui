@@ -2,15 +2,15 @@
   "name": "@zazuko/yasgui-utils",
   "version": "4.6.1",
   "description": "Utils for YASGUI libs",
-  "main": "build/utils.min.js",
-  "module": "build/utils.esm.js",
+  "type": "module",
+  "main": "build/utils.js",
+  "module": "build/utils.js",
   "types": "build/ts/src/index.d.ts",
   "files": ["build"],
   "exports": {
     ".": {
       "types": "./build/ts/src/index.d.ts",
-      "import": "./build/utils.esm.js",
-      "require": "./build/utils.min.js"
+      "import": "./build/utils.js"
     },
     "./*": "./*"
   },
@@ -25,9 +25,12 @@
   },
   "dependencies": {
     "dompurify": "^3.2.4",
+    "lodash-es": "^4.18.1",
+    "query-string": "^6.10.1",
     "store": "^2.0.12"
   },
   "devDependencies": {
+    "@types/lodash-es": "^4.17.3",
     "@types/node": "^22.5.4"
   },
   "publishConfig": {

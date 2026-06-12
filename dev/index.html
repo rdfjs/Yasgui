@@ -2,50 +2,39 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <style>
-      body {
-        font-family: "Roboto", sans-serif;
-        margin: 0px;
-      }
-      .navItem a {
-        color: #555;
-        text-decoration: none;
-        padding: 5px;
-        padding-right: 15px;
-      }
-      .navItem a:hover {
-        color: #222;
-      }
-      .navItem.active a {
-        color: black;
-        font-size: 110%;
-      }
-    </style>
-    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" />
+    <link rel="icon" href="/yasgui.png" />
+    <link rel="stylesheet" href="./style.css" />
     <title>YASGUI</title>
   </head>
   <body>
-    <div style="background:#eee">
+    <div class="navBar">
       <nav style="display: flex">
-        <img src="/yasgui.png" style="max-height:50px;padding:5px;margin-left: 10px" alt="Yasgui Logo" />
+        <img class="logo" src="/yasgui.png" style="max-height:50px;padding:5px;margin-left: 10px" alt="Yasgui Logo" />
         <ul style="display: flex; list-style: none; align-self: center">
           <li class="navItem active"><a class="nav-link" href="/">Yasgui</a></li>
+          <li class="navItem"><a class="nav-link" href="codemirror">CodeMirror</a></li>
           <li class="navItem"><a class="nav-link" href="yasqe">Yasqe</a></li>
           <li class="navItem"><a class="nav-link" href="yasr">Yasr</a></li>
         </ul>
+        <button class="themeToggle" id="darkModeToggle" type="button"></button>
       </nav>
     </div>
 
     <div id="yasgui"></div>
 
     <script type="module">
+      // Yasgui is editor-independent: import an editor and pass a factory. Here we use the
+      // Monaco-based @zazuko/yasqe with the qlue-ls language server (provided by the embedder).
       import Yasgui from "@zazuko/yasgui";
+      import Yasqe, { qlueLs } from "@zazuko/yasqe";
+      import { setupThemeToggle, createQlueLsWorker, DEMO_ENDPOINT } from "./utils";
+      // yasgui/yasqe are LS-agnostic; to switch to another SPARQL language server only ./qluels changes.
       window.onpageshow = function () {
+        const theme = setupThemeToggle((t) => window.yasgui.yasqe?.setTheme(t));
         window.yasgui = new Yasgui(document.getElementById("yasgui"), {
-          corsProxy: "",
-          requestConfig: {
-            endpoint: "https://dbpedia.org/sparql",
-          },
+          requestConfig: { endpoint: DEMO_ENDPOINT },
+          yasqe: (parent, conf) => new Yasqe(parent, { ...conf, theme, languageServerWorker: createQlueLsWorker }),
+          onEndpointChange: (yasgui, endpoint) => qlueLs.configureBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
         });
       };
     </script>

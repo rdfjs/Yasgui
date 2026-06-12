@@ -17,11 +17,12 @@
       "@zazuko/yasgui": ["./packages/yasgui/src"],
       "@zazuko/yasgui-utils": ["./packages/utils/src"],
       "@zazuko/yasqe": ["./packages/yasqe/src"],
+      "@zazuko/yasqe-codemirror": ["./packages/yasqe-codemirror/src"],
       "@zazuko/yasr": ["./packages/yasr/src"]
     }
   },
   "files": ["./packages/yasgui/typings-custom/main.d.ts", "./vite-env.d.ts"],
-  "include": ["./packages/*/src/**/**/*", "./test/*", "./packages/yasqe/grammar/tokenizer.ts"],
+  "include": ["./packages/*/src/**/**/*", "./test/*"],
   "compileOnSave": false,
   "exclude": ["**/build/**"]
 }

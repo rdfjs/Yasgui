@@ -110,7 +110,7 @@ export class TabListEl {
 
     //tab close btn
     const closeBtn = document.createElement("div");
-    closeBtn.innerHTML = "&#x2716;";
+    closeBtn.innerText = "\u2716\uFE0E"; // ✖ but monochrome
     closeBtn.title = "Close tab";
     closeBtn.setAttribute("tabindex", "-1");
     closeBtn.setAttribute("aria-hidden", "true");

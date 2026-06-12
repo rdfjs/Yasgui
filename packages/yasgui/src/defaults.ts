@@ -1,6 +1,6 @@
 import { Config } from "./";
 import Yasr from "@zazuko/yasr";
-import { default as Yasqe } from "@zazuko/yasqe";
+import { defaultRequestConfig, YasqeFactory } from "@zazuko/yasgui-utils";
 import { CatalogueItem } from "./endpointSelect";
 
 export default function initialize(): Config<CatalogueItem> {
@@ -26,18 +26,44 @@ export default function initialize(): Config<CatalogueItem> {
     persistencyExpire: 60 * 60 * 24 * 30,
     persistenceLabelResponse: "response",
     persistenceLabelConfig: "config",
-    yasqe: Yasqe.defaults,
+    // No default editor: Yasgui is editor-independent and the consumer must supply a `yasqe`
+    // factory (e.g. (parent, conf) => new Yasqe(parent, conf)). Validated in the constructor.
+    yasqe: undefined as unknown as YasqeFactory,
     yasr: Yasr.defaults,
     endpointCatalogueOptions: {
       getData: () => {
         return [
-          {
-            endpoint: "https://dbpedia.org/sparql",
-          },
-          {
-            endpoint: "https://query.wikidata.org/bigdata/namespace/wdq/sparql",
-          },
-        ];
+          "https://sparql.dblp.org/sparql",
+          "https://dbpedia.org/sparql",
+          "https://query.wikidata.org/sparql",
+          "https://qlever.dev/api/wikidata",
+          "https://qlever.dev/api/wikimedia-commons",
+          "https://qlever.dev/api/osm-planet",
+          "https://qlever.dev/api/freebase",
+          "https://qlever.dev/api/imdb",
+          "https://sparql.uniprot.org/sparql",
+          "https://www.bgee.org/sparql/",
+          "https://sparql.omabrowser.org/sparql/",
+          "https://beta.sparql.swisslipids.org/",
+          "https://sparql.rhea-db.org/sparql/",
+          "https://sparql.cellosaurus.org/sparql",
+          "https://sparql.sibils.org/sparql",
+          "https://kg.earthmetabolome.org/metrin/api/",
+          "https://hamap.expasy.org/sparql/",
+          "https://rdf.metanetx.org/sparql/",
+          "https://sparql.orthodb.org/sparql",
+          "https://idsm.elixir-czech.cz/sparql/endpoint/idsm",
+          "https://data.allie.dbcls.jp/sparql",
+          "https://sparql.wikipathways.org/sparql/",
+          "https://id.nlm.nih.gov/mesh/sparql",
+          "https://bio2rdf.org/sparql",
+          "https://agrovoc.fao.org/sparql",
+          "https://vocab.getty.edu/sparql",
+          "https://data.doremus.org/sparql",
+          "https://data.bnf.fr/sparql",
+          "https://rdf.insee.fr/sparql",
+          "https://data.europa.eu/sparql",
+        ].map((endpoint) => ({ endpoint }));
       },
       keys: [],
       renderItem: (data, source) => {
@@ -49,7 +75,7 @@ export default function initialize(): Config<CatalogueItem> {
         endpointSpan.innerHTML =
           data.matches.endpoint?.reduce(
             (current, object) => (object.highlight ? current + object.text.bold() : current + object.text),
-            ""
+            "",
           ) || "";
         contentDiv.appendChild(endpointSpan);
         source.appendChild(contentDiv);
@@ -58,7 +84,7 @@ export default function initialize(): Config<CatalogueItem> {
     copyEndpointOnNewTab: true,
     populateFromUrl: true,
     autoAddOnInit: true,
-    requestConfig: Yasqe.defaults.requestConfig,
+    requestConfig: { ...defaultRequestConfig },
     contextMenuContainer: undefined,
   };
 }

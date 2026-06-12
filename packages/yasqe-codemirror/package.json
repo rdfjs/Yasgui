@@ -1,0 +1,59 @@
+{
+  "name": "@zazuko/yasqe-codemirror",
+  "description": "Yet Another SPARQL Query Editor, CodeMirror 6 edition",
+  "version": "4.6.1",
+  "type": "module",
+  "main": "build/yasqe-codemirror.js",
+  "module": "build/yasqe-codemirror.js",
+  "types": "build/ts/src/index.d.ts",
+  "files": ["build"],
+  "exports": {
+    ".": {
+      "types": "./build/ts/src/index.d.ts",
+      "import": "./build/yasqe-codemirror.js"
+    },
+    "./style.css": "./build/yasqe-codemirror.css",
+    "./*": "./*"
+  },
+  "license": "MIT",
+  "author": "Triply <info@triply.cc>",
+  "homepage": "https://github.com/rdfjs/Yasgui",
+  "engines": {
+    "node": ">= 8"
+  },
+  "keywords": [
+    "JavaScript",
+    "SPARQL",
+    "Editor",
+    "CodeMirror",
+    "Semantic Web",
+    "Linked Data"
+  ],
+  "bugs": "https://github.com/rdfjs/Yasgui/issues/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rdfjs/Yasgui.git",
+    "directory": "packages/yasqe-codemirror"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.18.0",
+    "@codemirror/commands": "^6.6.0",
+    "@codemirror/language": "^6.10.2",
+    "@codemirror/lint": "^6.8.1",
+    "@codemirror/lsp-client": "^6.2.4",
+    "@codemirror/search": "^6.5.6",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.28.0",
+    "@zazuko/yasgui-utils": "^4.6.1",
+    "events": "^3.3.0",
+    "lodash-es": "^4.18.1",
+    "query-string": "^6.10.1"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.3",
+    "@types/node": "^22.5.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

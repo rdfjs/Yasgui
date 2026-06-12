@@ -1,7 +1,7 @@
 import { addClass, drawSvgStringAsElement, removeClass } from "@zazuko/yasgui-utils";
 import "./TabPanel.scss";
 import Tab from "./Tab";
-import { RequestConfig } from "@zazuko/yasqe";
+import { RequestConfig } from "@zazuko/yasgui-utils";
 import { toPairs, fromPairs } from "lodash-es";
 const AcceptOptionsMap: { key: string; value: string }[] = [
   { key: "JSON", value: "application/sparql-results+json" },
@@ -51,8 +51,8 @@ export default class TabPanel {
         </metadata>
         <title>Settings</title>
         <path d="m95.868 58.018-3-3.24a42.5 42.5 0 0 0 0-9.43l3-3.22c1.79-1.91 5-4.44 4-6.85l-4.11-10c-1-2.41-5.08-1.91-7.69-2l-4.43-0.16a43.24 43.24 0 0 0-6.64-6.66l-0.14-4.43c-0.08-2.6 0.43-6.69-2-7.69l-10-4.15c-2.4-1-4.95 2.25-6.85 4l-3.23 3a42.49 42.49 0 0 0-9.44 0l-3.21-3c-1.9-1.78-4.44-5-6.85-4l-10 4.11c-2.41 1-1.9 5.09-2 7.69l-0.16 4.42a43.24 43.24 0 0 0-6.67 6.65l-4.42 0.14c-2.6 0.08-6.69-0.43-7.69 2l-4.15 10c-1 2.4 2.25 4.94 4 6.84l3 3.23a42.49 42.49 0 0 0 0 9.44l-3 3.22c-1.78 1.9-5 4.43-4 6.84l4.11 10c1 2.41 5.09 1.91 7.7 2l4.41 0.15a43.24 43.24 0 0 0 6.66 6.68l0.13 4.41c0.08 2.6-0.43 6.7 2 7.7l10 4.15c2.4 1 4.94-2.25 6.84-4l3.24-3a42.5 42.5 0 0 0 9.42 0l3.22 3c1.91 1.79 4.43 5 6.84 4l10-4.11c2.41-1 1.91-5.08 2-7.7l0.15-4.42a43.24 43.24 0 0 0 6.68-6.65l4.42-0.14c2.6-0.08 6.7 0.43 7.7-2l4.15-10c1.04-2.36-2.22-4.9-3.99-6.82zm-45.74 15.7c-12.66 0-22.91-10.61-22.91-23.7s10.25-23.7 22.91-23.7 22.91 10.61 22.91 23.7-10.25 23.7-22.91 23.7z"/>
-       </svg>`
-      )
+       </svg>`,
+      ),
     );
     addClass(this.settingsButton, "tabContextButton");
     controlBarEl.appendChild(this.settingsButton);
@@ -178,7 +178,7 @@ export default class TabPanel {
         this.tab.setRequestConfig({ acceptHeaderSelect: (<HTMLOptionElement>ev.target).value });
       },
       "Ask / Select",
-      acceptWrapper
+      acceptWrapper,
     );
 
     this.setAcceptHeader_graph = createSelector(
@@ -187,7 +187,7 @@ export default class TabPanel {
         this.tab.setRequestConfig({ acceptHeaderGraph: (<HTMLOptionElement>ev.target).value });
       },
       "Construct / Describe",
-      acceptWrapper
+      acceptWrapper,
     );
 
     this.menuElement.appendChild(acceptWrapper);
@@ -367,7 +367,7 @@ function createSelector(
   options: { key: string; value: string }[],
   changeHandler: (event: Event) => void,
   label: string,
-  parent: HTMLElement
+  parent: HTMLElement,
 ): (selected: string) => void {
   const selectorWrapper = document.createElement("div");
   addClass(selectorWrapper, "selector");
@@ -445,7 +445,7 @@ function drawSingleInputWhenEmpty(
   root: HTMLElement,
   index: number,
   content: Array<string | undefined>,
-  onBlur: () => void
+  onBlur: () => void,
 ) {
   const namedGraphItem = document.createElement("div");
   addClass(namedGraphItem, "graphInput");
@@ -476,7 +476,7 @@ function drawDoubleInputWhenEmpty(
   root: HTMLElement,
   index: number,
   content: Array<TextInputPair | undefined>,
-  onBlur: () => void
+  onBlur: () => void,
 ) {
   const kvInput = document.createElement("div");
   addClass(kvInput, "textRow");

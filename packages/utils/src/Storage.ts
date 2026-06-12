@@ -1,4 +1,6 @@
-import store from "store";
+// Modern build (native JSON, no eval-based json2 polyfill); the default "store" entry pulls in
+// store/plugins/lib/json2.js which uses direct eval and triggers a build-time [EVAL] warning
+import store from "store/dist/store.modern.js";
 export interface ItemWrapper<V = {}> {
   exp: number;
   val: V;

@@ -12,7 +12,7 @@ import type { Plugin, DownloadInfo } from "../";
 import Yasr from "../../";
 import { drawSvgStringAsElement, drawFontAwesomeIconAsSvg, addClass, removeClass } from "@zazuko/yasgui-utils";
 import * as faTableIcon from "@fortawesome/free-solid-svg-icons/faTable";
-import { DeepReadonly } from "ts-essentials";
+import type { DeepReadonly } from "@zazuko/yasgui-utils";
 import { cloneDeep } from "lodash-es";
 import sanitize from "../../helpers/sanitize";
 import type { Api, ConfigColumns, CellMetaSettings, Config } from "datatables.net";
@@ -60,7 +60,7 @@ export default class Table implements Plugin<PluginConfig> {
         onResize: () => {};
       }
     | undefined;
-  public helpReference = "https://docs.triply.cc/yasgui/#table";
+  public helpReference = "https://vemonet.github.io/Yasgui/docs/plugins#table";
   public label = "Table";
   public priority = 10;
   public getIcon() {
@@ -162,6 +162,7 @@ export default class Table implements Plugin<PluginConfig> {
     return [
       {
         name: "",
+        className: "rowNumberCol",
         searchable: false,
         width: `${this.getSizeFirstColumn()}px`,
         type: "num",

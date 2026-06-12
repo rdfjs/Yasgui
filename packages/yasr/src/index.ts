@@ -1,5 +1,10 @@
+/**
+ * Yasr · the standalone SPARQL results viewer.
+ * @module Yasr
+ */
 import { EventEmitter } from "events";
 import { merge, filter, mapValues, uniqueId } from "lodash-es";
+import type { DeepPartial } from "@zazuko/yasgui-utils";
 import getDefaults from "./defaults";
 import { Plugin } from "./plugins";
 import {
@@ -16,6 +21,7 @@ import { addScript, addCss, sanitize } from "./helpers";
 import * as faDownload from "@fortawesome/free-solid-svg-icons/faDownload";
 import * as faQuestionCircle from "@fortawesome/free-solid-svg-icons/faQuestionCircle";
 import "./main.scss";
+import "./darkmode.css";
 
 export interface PersistentConfig {
   selectedPlugin?: string;
@@ -50,7 +56,7 @@ export class Yasr extends EventEmitter {
   // Utils
   public utils = { addScript: addScript, addCSS: addCss, sanitize: sanitize };
 
-  constructor(parent: HTMLElement, conf: Partial<Config> = {}, data?: any) {
+  constructor(parent: HTMLElement, conf: DeepPartial<Config> = {}, data?: any) {
     super();
     if (!parent) throw new Error("No parent passed as argument. Dont know where to draw YASR");
     this.rootEl = document.createElement("div");

@@ -1,0 +1,78 @@
+.yasqe .cm-editor {
+  line-height: 1.5em;
+  font-size: 14px;
+  border: 1px solid #d1d1d1;
+  height: 100%;
+}
+.yasqe .cm-editor.cm-focused {
+  outline: none;
+}
+.yasqe .cm-scroller {
+  font-family: monospace;
+}
+.yasqe .cm-matchhighlight {
+  background-color: #dbdeed;
+}
+
+/* Semantic-token colors. The embedder's language-server glue marks tokens with
+   `cm-st-<tokenType>` classes (see the qlue-ls demo wiring); we provide the light/dark palette
+   here so highlighting follows the theme without re-instantiating the editor. */
+.yasqe .cm-st-keyword {
+  color: #708;
+}
+.yasqe .cm-st-function {
+  color: #00c;
+}
+.yasqe .cm-st-variable {
+  color: #225599;
+}
+.yasqe .cm-st-string {
+  color: #a11;
+}
+.yasqe .cm-st-number {
+  color: #164;
+}
+.yasqe .cm-st-comment {
+  color: #940;
+  font-style: italic;
+}
+.yasqe .cm-st-operator {
+  color: #a0a;
+}
+.yasqe .cm-st-namespace {
+  color: #085;
+}
+
+/* Dark theme overrides. The CodeMirror editor chrome (background, gutter, selection) is themed via
+   the `darkTheme` extension in index.ts; these rules cover the surrounding container and the
+   semantic-token palette, which live outside CodeMirror's own theming. */
+[data-theme="dark"] .yasqe .cm-editor {
+  border-color: #3a3a3a;
+}
+[data-theme="dark"] .yasqe .cm-matchhighlight {
+  background-color: #3a3d41;
+}
+[data-theme="dark"] .yasqe .cm-st-keyword {
+  color: #c586c0;
+}
+[data-theme="dark"] .yasqe .cm-st-function {
+  color: #4fc1ff;
+}
+[data-theme="dark"] .yasqe .cm-st-variable {
+  color: #9cdcfe;
+}
+[data-theme="dark"] .yasqe .cm-st-string {
+  color: #ce9178;
+}
+[data-theme="dark"] .yasqe .cm-st-number {
+  color: #b5cea8;
+}
+[data-theme="dark"] .yasqe .cm-st-comment {
+  color: #6a9955;
+}
+[data-theme="dark"] .yasqe .cm-st-operator {
+  color: #d4d4d4;
+}
+[data-theme="dark"] .yasqe .cm-st-namespace {
+  color: #4ec9b0;
+}

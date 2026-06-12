@@ -64,6 +64,10 @@
           color: black;
           border-color: black;
         }
+
+        & + .selectorButton {
+          margin-left: 8px;
+        }
       }
     }
 
@@ -86,12 +90,41 @@
           font-weight: bold;
           font-size: small;
         }
+
+        select {
+          background: #fff;
+          color: rgba(0, 0, 0, 0.87);
+          border: 1px solid rgba(0, 0, 0, 0.26);
+          border-radius: 6px;
+          padding: 4px 6px;
+          cursor: pointer;
+
+          &:focus {
+            outline: none;
+            border-color: #337ab7;
+          }
+        }
       }
     }
 
     .textSetting {
       display: flex;
       flex-direction: column;
+      gap: 4px;
+
+      // Explicit colors so the fields stay legible regardless of the ambient
+      // `color-scheme` (host pages may toggle it independently of our theme).
+      input[type="text"] {
+        color: rgba(0, 0, 0, 0.87);
+        background: #fff;
+        border: 1px solid rgba(0, 0, 0, 0.26);
+        border-radius: 2px;
+
+        &:focus {
+          outline: none;
+          border-color: #337ab7;
+        }
+      }
 
       .label {
         align-self: flex-start;
@@ -102,9 +135,11 @@
       }
 
       .textRow {
+        display: flex;
         flex-direction: row;
         flex-wrap: nowrap;
         white-space: nowrap;
+        gap: 5px;
       }
 
       .removeButton {

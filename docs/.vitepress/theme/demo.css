@@ -1,0 +1,63 @@
+/* Sticky footer: page fills at least the viewport */
+.yasgui-home {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.yasgui-home .VPContent {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+/* Fill the content chain down to the demo so its theme bar can sit at the bottom */
+.yasgui-home .VPPage,
+.yasgui-home .VPPage > div,
+.yasgui-home .VPPage > div > div,
+.yasgui-home .yasgui-home-demo {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.yasgui-home .VPPage {
+  padding: 0;
+}
+/* Hide the fixed "Return to top" local-nav bar that overlaps the demo on small screens */
+.yasgui-home .VPLocalNav {
+  display: none;
+}
+
+/* VitePress global CSS resets can inflate the endpoint input */
+.yasgui .autocomplete {
+  font-size: 13px;
+  line-height: normal;
+  height: auto;
+}
+
+/* YASR and results: natural block height, no overflow clipping */
+.yasgui-demo .yasgui .yasr,
+.yasgui-demo .yasgui .yasr_results {
+  height: auto;
+  overflow: visible;
+}
+
+/* Graph plugin */
+.yasgui-demo .yasgui-graph-plugin-container {
+  min-height: 30vh;
+}
+
+/* Geo plugin/leaflet: needs an explicit height to render */
+.yasgui-demo .yasr_results .leaflet-container {
+  min-height: 300px;
+}
+
+/* VitePress dark mode uses class="dark" on <html>, while Yasgui's own dark theme keys off [data-theme="dark"] */
+.dark .yasgui .clearEndpointBtn {
+  background-color: var(--yg-d-border);
+  border-color: var(--yg-d-border);
+  color: var(--yg-d-text);
+}
+.dark .yasgui .clearEndpointBtn:hover {
+  background-color: var(--yg-d-hover);
+  color: #fff;
+}

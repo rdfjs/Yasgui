@@ -1,0 +1,24 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+  "tsconfig": "./tsconfig.json",
+  "name": "Yasgui API",
+  "entryPointStrategy": "resolve",
+  "excludeReferences": true,
+  "excludeExternals": true,
+  "externalPattern": ["**/node_modules/**"],
+  "entryPoints": [
+    "packages/yasgui/src/index.ts",
+    "packages/yasqe/src/index.ts",
+    "packages/yasr/src/index.ts",
+    "packages/utils/src/index.ts"
+  ],
+  "out": "docs/api",
+  "docsRoot": "docs",
+  "readme": "none",
+  "githubPages": false,
+  "hideGenerator": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "sort": ["source-order"]
+}

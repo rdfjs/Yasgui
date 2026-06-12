@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/yasgui.png" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>Yasgui with SWLS</title>
+  </head>
+  <body>
+    <div class="navBar">
+      <nav style="display: flex">
+        <img class="logo" src="/yasgui.png" style="max-height:50px;padding:5px;margin-left: 10px" alt="Yasgui Logo" />
+        <ul style="display: flex; list-style: none; align-self: center">
+          <li class="navItem active"><a class="nav-link" href="/">Yasgui</a></li>
+          <li class="navItem"><a class="nav-link" href="yasqe">Yasqe</a></li>
+          <li class="navItem"><a class="nav-link" href="yasr">Yasr</a></li>
+        </ul>
+        <button class="themeToggle" id="darkModeToggle" type="button"></button>
+      </nav>
+    </div>
+
+    <div id="yasgui"></div>
+
+    <script type="module">
+      import Yasgui from "@zazuko/yasgui";
+      import { setupThemeToggle, createQlueLsWorker, DEMO_ENDPOINT } from "./utils";
+      // import { createSwlsWorker } from "./swls";
+      // TODO: implement with swls
+      window.onpageshow = function () {
+        const theme = setupThemeToggle((t) => window.yasgui.yasqe?.setTheme(t));
+        window.yasgui = new Yasgui(document.getElementById("yasgui"), {
+          requestConfig: { endpoint: DEMO_ENDPOINT },
+          yasqe: { theme },
+          // languageServerWorker: createSwlsWorker,
+          // onEndpointChange: (yasgui, endpoint) => qlueLs.configureBackend(yasgui.yasqe?.getLanguageClient(), endpoint),
+        });
+      };
+    </script>
+  </body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/yasgui.png" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>YASGUI · CodeMirror</title>
+  </head>
+  <body>
+    <div class="navBar">
+      <nav style="display: flex">
+        <img class="logo" src="/yasgui.png" style="max-height:50px;padding:5px;margin-left: 10px" alt="Yasgui Logo" />
+        <ul style="display: flex; list-style: none; align-self: center">
+          <li class="navItem"><a class="nav-link" href="/">Yasgui</a></li>
+          <li class="navItem active"><a class="nav-link" href="codemirror">CodeMirror</a></li>
+          <li class="navItem"><a class="nav-link" href="yasqe">Yasqe</a></li>
+          <li class="navItem"><a class="nav-link" href="yasr">Yasr</a></li>
+        </ul>
+        <button class="themeToggle" id="darkModeToggle" type="button"></button>
+      </nav>
+    </div>
+
+    <div id="yasgui"></div>
+
+    <script type="module">
+      // Yasgui is editor-independent: the consumer imports an editor and passes a factory.
+      // Here we use the CodeMirror 6 editor (@zazuko/yasqe-codemirror) with the qlue-ls language
+      // server (created in the embedder; yasgui/yasqe never depend on it).
+      import Yasgui from "@zazuko/yasgui";
+      import Yasqe from "@zazuko/yasqe-codemirror";
+      import { createQlueLsClient, setQlueLsBackend } from "./qluelsCmClient";
+      import { setupThemeToggle, DEMO_ENDPOINT } from "./utils";
+
+      (async () => {
+        const backend = { endpoint: DEMO_ENDPOINT };
+
+        // Start qlue-ls and connect a single shared LSP client for all tabs.
+        let lsp;
+        try {
+          const client = await createQlueLsClient(backend, { completion: { timeoutMs: 10000, resultSizeLimit: 50 } });
+          lsp = { client };
+        } catch (e) {
+          console.warn("Could not start qlue-ls; running editors without a language server", e);
+        }
+
+        const theme = setupThemeToggle((t) => window.yasgui.yasqe?.setTheme(t));
+
+        window.yasgui = new Yasgui(document.getElementById("yasgui"), {
+          requestConfig: { endpoint: DEMO_ENDPOINT },
+          // The editor factory: build a CodeMirror Yasqe, wiring in our theme + LSP client.
+          yasqe: (parent, conf) => new Yasqe(parent, { ...conf, theme, lsp }),
+          // Keep qlue-ls pointed at the active tab's endpoint.
+          onEndpointChange: (_yasgui, endpoint) => {
+            if (lsp?.client) setQlueLsBackend(lsp.client, { ...backend, endpoint });
+          },
+        });
+      })();
+    </script>
+  </body>
+</html>

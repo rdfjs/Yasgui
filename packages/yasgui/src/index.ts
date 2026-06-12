@@ -1,3 +1,7 @@
+/**
+ * Yasgui · the full SPARQL app (editor + results + endpoint/tab management).
+ * @module Yasgui
+ */
 import { EventEmitter } from "events";
 import { merge, find, isEqual } from "lodash-es";
 import initializeDefaults from "./defaults";
@@ -7,20 +11,20 @@ import { default as Tab, PersistedJson as PersistedTabJson } from "./Tab";
 import { EndpointSelectConfig, CatalogueItem } from "./endpointSelect";
 import * as shareLink from "./linkUtils";
 import TabElements from "./TabElements";
-import { default as Yasqe, PartialConfig as YasqeConfig, RequestConfig } from "@zazuko/yasqe";
 import { default as Yasr, Config as YasrConfig } from "@zazuko/yasr";
 import { addClass, removeClass } from "@zazuko/yasgui-utils";
+import type { DeepPartial, IYasqe, YasqeFactory, RequestConfig } from "@zazuko/yasgui-utils";
 import "./index.scss";
+import "./darkmode.css";
 import "@zazuko/yasr/src/scss/global.scss";
 if (window) {
-  //We're storing yasqe and yasr as a member of Yasgui, but _also_ in the window
+  //We're storing yasr as a member of Yasgui, but _also_ in the window
   //That way, we dont have to tweak e.g. pro plugins to register themselves to both
   //Yasgui.Yasr _and_ Yasr.
-  if (Yasqe) (window as any).Yasqe = Yasqe;
   if (Yasr) (window as any).Yasr = Yasr;
 }
 export type YasguiRequestConfig = Omit<RequestConfig<Yasgui>, "adjustQueryBeforeRequest"> & {
-  adjustQueryBeforeRequest: RequestConfig<Yasqe>["adjustQueryBeforeRequest"];
+  adjustQueryBeforeRequest: RequestConfig<any>["adjustQueryBeforeRequest"];
 };
 export interface Config<EndpointObject extends CatalogueItem = CatalogueItem> {
   /**
@@ -35,19 +39,31 @@ export interface Config<EndpointObject extends CatalogueItem = CatalogueItem> {
   //The function allows us to modify the config before we pass it on to a tab
   populateFromUrl: boolean | ((configFromUrl: PersistedTabJson) => PersistedTabJson);
   autoAddOnInit: boolean;
-  persistenceId: ((yasr: Yasgui) => string) | string | null;
+  persistenceId: ((yasgui: Yasgui) => string) | string | null;
   persistenceLabelConfig: string;
   persistenceLabelResponse: string;
   persistencyExpire: number;
-  yasqe: Partial<YasqeConfig>;
+  /**
+   * The editor factory. Yasgui is editor-independent: the consumer imports an editor
+   * (e.g. `@zazuko/yasqe` for Monaco or `@zazuko/yasqe-codemirror` for CodeMirror 6) and supplies
+   * a factory that builds it into `parent`, given the per-tab config Yasgui injects. Wire any
+   * editor-specific options (theme, language server, ...) inside the factory:
+   *   yasqe: (parent, conf) => new Yasqe(parent, { ...conf, lsp: { client } })
+   */
+  yasqe: YasqeFactory;
   yasr: YasrConfig;
   requestConfig: YasguiRequestConfig;
   contextMenuContainer: HTMLElement | undefined;
   nonSslDomain?: string;
+  /**
+   * Called whenever the active SPARQL endpoint changes (on load, tab switch, or endpoint edit),
+   * with this Yasgui instance and the new endpoint. Defined once here, it applies to every tab.
+   * Typical use: configure the language server for that endpoint, e.g.
+   *   onEndpointChange: (yasgui, endpoint) => myConfigureBackend(yasgui.yasqe?.getLanguageClient(), endpoint)
+   */
+  onEndpointChange?: (yasgui: Yasgui, endpoint: string) => void;
 }
-export type PartialConfig = {
-  [P in keyof Config]?: Config[P] extends object ? Partial<Config[P]> : Config[P];
-};
+export type PartialConfig = DeepPartial<Config>;
 
 export type TabJson = PersistedTabJson;
 
@@ -90,9 +106,17 @@ export class Yasgui extends EventEmitter {
   public tabPanelsEl: HTMLDivElement;
   public config: Config;
   public persistentConfig: PersistentConfig;
+  // Single shared editor instance, built by the consumer-supplied `config.yasqe` factory.
+  // Tabs share this instance and swap its content/endpoint on activation via syncEditorsWithTab.
+  public yasqe: IYasqe | undefined;
+  private yasqeWrapperEl: HTMLDivElement | undefined;
+  // The tab that initiated the in-flight query, so async query events route back to it even if the
+  // user switches tabs in the meantime.
+  private queryingTab: Tab | undefined;
   public static Tab = Tab;
-  constructor(parent: HTMLElement, config: PartialConfig) {
+  constructor(parent: HTMLElement, config: PartialConfig = {}) {
     super();
+    if (!parent) throw new Error("No parent passed as argument. Dont know where to draw Yasgui");
     this.rootEl = document.createElement("div");
     addClass(this.rootEl, "yasgui");
     parent.appendChild(this.rootEl);
@@ -105,6 +129,8 @@ export class Yasgui extends EventEmitter {
 
     this.rootEl.appendChild(this.tabElements.drawTabsList());
     this.rootEl.appendChild(this.tabPanelsEl);
+    // Create the single shared Monaco editor before any tab is drawn/shown.
+    this.initGlobalYasqe();
     let executeIdAfterInit: string | undefined;
     let optionsFromUrl: PersistedTabJson | undefined;
     if (this.config.populateFromUrl) {
@@ -160,6 +186,85 @@ export class Yasgui extends EventEmitter {
       }
     }
   }
+  /** Build the single shared editor (via the consumer factory) and route its events to the active tab. */
+  private initGlobalYasqe() {
+    if (typeof this.config.yasqe !== "function") {
+      throw new Error(
+        "Yasgui is editor-independent: import an editor (e.g. @zazuko/yasqe or @zazuko/yasqe-codemirror) and " +
+          "pass it as the `yasqe` factory, e.g. new Yasgui(el, { yasqe: (parent, conf) => new Yasqe(parent, conf) })",
+      );
+    }
+    this.yasqeWrapperEl = document.createElement("div");
+    // Per-tab config Yasgui injects into the editor. Editor-specific options (theme, language
+    // server, ...) are the consumer's responsibility, wired inside their factory.
+    const yasqeConf = {
+      persistenceId: null, // yasgui handles persistent storing, per tab
+      consumeShareLink: null, // handled by the parent yasgui instance, not yasqe
+      createShareableLink: () => this.getActiveTab()?.getShareableLink() || "",
+      requestConfig: () => (this.getActiveTab()?.getProcessedRequestConfig() ?? {}) as any,
+    };
+    this.yasqe = this.config.yasqe(this.yasqeWrapperEl, yasqeConf);
+    this.setupGlobalYasqeListeners();
+  }
+
+  /** Notify the consumer that the active endpoint changed (single Yasgui-level hook for all tabs). */
+  public emitEndpointChange(endpoint: string) {
+    if (endpoint) this.config.onEndpointChange?.(this, endpoint);
+  }
+
+  private setupGlobalYasqeListeners() {
+    const yasqe = this.yasqe;
+    if (!yasqe) return;
+    // Yasqe events are emitted instance-first: (yasqe, ...payload). We route them to the active tab.
+    yasqe.on("blur", () => this.getActiveTab()?.handleYasqeBlur(yasqe));
+    yasqe.on("query", () => {
+      const tab = this.getActiveTab();
+      this.queryingTab = tab;
+      tab?.handleYasqeQuery(yasqe);
+    });
+    yasqe.on("queryBefore", () => this.getActiveTab()?.handleYasqeQueryBefore());
+    yasqe.on("queryAbort", () => {
+      (this.queryingTab || this.getActiveTab())?.handleYasqeQueryAbort();
+      this.queryingTab = undefined;
+    });
+    yasqe.on("resize", (_yasqe: any, newSize: any) => this.getActiveTab()?.handleYasqeResize(yasqe, newSize));
+    yasqe.on("autocompletionShown", (_yasqe: any, widget: any) =>
+      this.getActiveTab()?.handleAutocompletionShown(yasqe, widget),
+    );
+    yasqe.on("autocompletionClose", () => this.getActiveTab()?.handleAutocompletionClose(yasqe));
+    yasqe.on("queryResponse", (_yasqe: any, response: any, duration: any) => {
+      (this.queryingTab || this.getActiveTab())?.handleQueryResponse(yasqe, response, duration);
+      this.queryingTab = undefined;
+    });
+  }
+
+  public getActiveTab(): Tab | undefined {
+    return this.getTab();
+  }
+
+  /**
+   * Move the shared Monaco editor into the given tab's container and load that tab's content.
+   * Called when a tab becomes active so we reuse one editor instead of initializing many.
+   */
+  public syncEditorsWithTab(tab: Tab, yasqeContainer: HTMLElement) {
+    if (this.yasqeWrapperEl?.parentNode) {
+      this.yasqeWrapperEl.parentNode.removeChild(this.yasqeWrapperEl);
+    }
+    if (this.yasqeWrapperEl) yasqeContainer.appendChild(this.yasqeWrapperEl);
+    this.updateEditorsContent(tab);
+  }
+
+  /** Load a tab query, request config and endpoint backend into the shared editor. */
+  public updateEditorsContent(tab: Tab) {
+    if (!this.yasqe) return;
+    const tabConfig = tab.getPersistedJson();
+    this.yasqe.setValue(tabConfig.yasqe.value);
+    this.yasqe.setSize(tabConfig.yasqe.editorHeight || this.yasqe.config.editorHeight);
+    this.yasqe.config.requestConfig = () => tab.getProcessedRequestConfig() as any;
+    this.yasqe.config.createShareableLink = () => tab.getShareableLink();
+    this.emitEndpointChange(tab.getEndpoint());
+  }
+
   public hasFullscreen(fullscreen: boolean) {
     if (fullscreen) {
       this.emit("fullscreen-enter", this);
@@ -355,7 +460,6 @@ export class Yasgui extends EventEmitter {
   }
   public static linkUtils = shareLink;
   public static Yasr = Yasr;
-  public static Yasqe = Yasqe;
   public static defaults = initializeDefaults();
   public static corsEnabled: { [endpoint: string]: boolean } = {};
 }
