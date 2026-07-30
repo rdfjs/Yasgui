@@ -1,0 +1,181 @@
+/* CSS Custom Properties for sparql-editor theming (light defaults) */
+:root {
+  --sparql-editor-text: #000000;
+  --sparql-editor-border: #d1d1d1;
+  --sparql-editor-notification-bg: #eeeeee;
+  --sparql-editor-notification-text: #999999;
+  --sparql-editor-tooltip-bg: rgba(0, 0, 0, 0.8);
+  --sparql-editor-tooltip-text: #ffffff;
+  --sparql-editor-error: #ff0000;
+  --sparql-editor-btn-bg: #ffffff;
+  --sparql-editor-btn-text: #333333;
+  --sparql-editor-btn-border: #cccccc;
+  --sparql-editor-btn-hover-bg: #ebebeb;
+  --sparql-editor-btn-hover-border: #adadad;
+  --sparql-editor-accent: #337ab7;
+  --sparql-editor-accent-text: #ffffff;
+  --sparql-editor-popup-bg: #ffffff;
+  --sparql-editor-popup-border: #e3e3e3;
+  --sparql-editor-icon: #505050;
+}
+
+/* Dark values, shared by the explicit toggle and the OS preference below */
+html[data-theme="dark"] {
+  --sparql-editor-text: #d4d4d4;
+  --sparql-editor-border: #3e3e3e;
+  --sparql-editor-notification-bg: #2d2d30;
+  --sparql-editor-notification-text: #cccccc;
+  --sparql-editor-tooltip-bg: rgba(255, 255, 255, 0.1);
+  --sparql-editor-tooltip-text: #ffffff;
+  --sparql-editor-error: #ff6b6b;
+  --sparql-editor-btn-bg: #2d2d30;
+  --sparql-editor-btn-text: #d4d4d4;
+  --sparql-editor-btn-border: #3e3e3e;
+  --sparql-editor-btn-hover-bg: #3e3e3e;
+  --sparql-editor-btn-hover-border: #555555;
+  --sparql-editor-accent: #4fc3f7;
+  --sparql-editor-accent-text: #1e1e1e;
+  --sparql-editor-popup-bg: #2d2d30;
+  --sparql-editor-popup-border: #3e3e3e;
+  --sparql-editor-icon: #cccccc;
+}
+
+/* Auto dark mode following the OS/browser preference, unless the user forced light */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    --sparql-editor-text: #d4d4d4;
+    --sparql-editor-border: #3e3e3e;
+    --sparql-editor-notification-bg: #2d2d30;
+    --sparql-editor-notification-text: #cccccc;
+    --sparql-editor-tooltip-bg: rgba(255, 255, 255, 0.1);
+    --sparql-editor-tooltip-text: #ffffff;
+    --sparql-editor-error: #ff6b6b;
+    --sparql-editor-btn-bg: #2d2d30;
+    --sparql-editor-btn-text: #d4d4d4;
+    --sparql-editor-btn-border: #3e3e3e;
+    --sparql-editor-btn-hover-bg: #3e3e3e;
+    --sparql-editor-btn-hover-border: #555555;
+    --sparql-editor-accent: #4fc3f7;
+    --sparql-editor-accent-text: #1e1e1e;
+    --sparql-editor-popup-bg: #2d2d30;
+    --sparql-editor-popup-border: #3e3e3e;
+    --sparql-editor-icon: #cccccc;
+  }
+}
+
+.sparql-editor {
+  position: relative;
+  color: var(--sparql-editor-text);
+
+  .svgImg {
+    display: inline-block;
+  }
+  span.shortlinkErr {
+    font-size: small;
+    color: var(--sparql-editor-error);
+    font-weight: bold;
+    float: left;
+  }
+  .CodeMirror-hint {
+    max-width: 30em;
+  }
+  .notificationContainer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    bottom: 0;
+  }
+  .notification {
+    z-index: 4;
+    padding: 0 5px;
+    max-height: 0px;
+    /* Clip while collapsed so the (possibly multi-line) text disappears with the box on dismiss. */
+    overflow: hidden;
+    color: var(--sparql-editor-notification-text);
+    background-color: var(--sparql-editor-notification-bg);
+    font-size: 90%;
+    text-align: center;
+    transition: max-height 0.2s ease-in;
+    border-top-right-radius: 2px;
+    border-top-left-radius: 2px;
+  }
+  .notification.active {
+    max-height: 3rem;
+  }
+  /* Language-server error notifications render via the shared `createLspErrorNotification` helper
+     (@rdfjs/sparql-utils), which injects its own `.sparql-editor-lsp-error` styles. */
+
+  .parseErrorIcon {
+    width: 13px;
+    height: 13px;
+    margin-top: 2px;
+    margin-left: 2px;
+    svg {
+      g {
+        fill: var(--sparql-editor-error);
+      }
+    }
+  }
+
+  .sparql-editor_tooltip {
+    background: var(--sparql-editor-tooltip-bg);
+    border-radius: 5px;
+    color: var(--sparql-editor-tooltip-text);
+    padding: 5px 15px;
+    width: 220px;
+    white-space: pre-wrap;
+    white-space: normal;
+    margin-top: 5px;
+  }
+  .notificationLoader {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+  }
+  .resizeWrapper {
+    width: 100%;
+    height: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: row-resize;
+  }
+  .resizeChip {
+    width: 20%;
+    height: 4px;
+    background-color: var(--sparql-editor-border);
+    visibility: hidden;
+    border-radius: 2px;
+  }
+  /* Show resizeChip when sparql-editor is hovered */
+  &:hover {
+    .resizeChip {
+      visibility: visible;
+    }
+  }
+}
+
+/* Language-server settings panel styles (`.sparql-editor-settings-*`) are injected at runtime by the
+   shared `openSettingsPanel` helper in @rdfjs/sparql-utils, so both editors share one source. */
+
+/* LSP diagnostics mirrored into the left glyph margin (decorations are set in index.ts via
+   `setupDiagnosticGlyphs`; Monaco itself only draws inline squiggles). Severity colors are
+   theme-independent so they stay legible in both light and dark. */
+.sparql-editor-glyph-error,
+.sparql-editor-glyph-warning,
+.sparql-editor-glyph-info {
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 13px 13px;
+  cursor: pointer;
+}
+.sparql-editor-glyph-error {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='6.5' fill='%23e5484d'/><rect x='7.1' y='4' width='1.8' height='5' rx='.9' fill='%23fff'/><circle cx='8' cy='11.2' r='1' fill='%23fff'/></svg>");
+}
+.sparql-editor-glyph-warning {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M8 1.8 14.7 13.5a1 1 0 0 1-.87 1.5H2.17a1 1 0 0 1-.87-1.5z' fill='%23e0a800'/><rect x='7.1' y='6' width='1.8' height='4' rx='.9' fill='%23fff'/><circle cx='8' cy='12' r='1' fill='%23fff'/></svg>");
+}
+.sparql-editor-glyph-info {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='6.5' fill='%234c8bf5'/><circle cx='8' cy='5' r='1' fill='%23fff'/><rect x='7.1' y='7' width='1.8' height='5' rx='.9' fill='%23fff'/></svg>");
+}

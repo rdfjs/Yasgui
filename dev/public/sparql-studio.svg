@@ -1,0 +1,14 @@
+<svg width="604" height="523" viewBox="0 0 604 523" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>SPARQL Studio</title>
+  <desc>Triangle of three rings colored orange, green and purple (W3C Semantic Web palette) joined by neutral grey edges, an RDF triple.</desc>
+  <g stroke="#595959" stroke-width="22" stroke-linecap="round" fill="none">
+    <line x1="175" y1="110" x2="429" y2="110"/>
+    <line x1="125" y1="177" x2="180" y2="363"/>
+    <line x1="451" y1="161" x2="248" y2="379"/>
+  </g>
+  <g stroke-width="26" fill="none">
+    <circle stroke="#EF7C01" cx="105" cy="110" r="50"/>
+    <circle stroke="#86BA09" cx="499" cy="110" r="50"/>
+    <circle stroke="#BC1789" cx="200" cy="430" r="50"/>
+  </g>
+</svg>

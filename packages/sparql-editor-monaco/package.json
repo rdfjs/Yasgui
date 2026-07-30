@@ -1,0 +1,54 @@
+{
+  "name": "@rdfjs/sparql-editor-monaco",
+  "description": "SPARQL query editor for the web, based on the Monaco editor (fork of Yasqe)",
+  "version": "4.6.1",
+  "type": "module",
+  "main": "build/sparql-editor-monaco.js",
+  "module": "build/sparql-editor-monaco.js",
+  "types": "build/ts/src/index.d.ts",
+  "files": ["build"],
+  "exports": {
+    ".": {
+      "types": "./build/ts/src/index.d.ts",
+      "import": "./build/sparql-editor-monaco.js"
+    },
+    "./index.js": "./build/sparql-editor-monaco.js",
+    "./style.css": "./build/sparql-editor-monaco.css",
+    "./*": "./*"
+  },
+  "license": "MIT",
+  "author": "Triply <info@triply.cc>",
+  "homepage": "https://github.com/rdfjs/Yasgui",
+  "engines": {
+    "node": ">= 8"
+  },
+  "keywords": [
+    "JavaScript",
+    "SPARQL",
+    "Editor",
+    "Semantic Web",
+    "Linked Data"
+  ],
+  "bugs": "https://github.com/rdfjs/Yasgui/issues/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rdfjs/Yasgui.git",
+    "directory": "packages/sparql-editor-monaco"
+  },
+  "dependencies": {
+    "@rdfjs/sparql-utils": "^4.6.1",
+    "@codingame/monaco-vscode-textmate-service-override": "^25.1.2",
+    "lodash-es": "^4.18.1",
+    "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@^25.1.2",
+    "monaco-languageclient": "~10.7.0",
+    "query-string": "^6.10.1",
+    "vscode": "npm:@codingame/monaco-vscode-extension-api@^25.1.2"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.3",
+    "@types/node": "^22.5.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,178 @@
+/**
+Delimiters
+Delimiters used by us
+- CamelCase
+Delimiters used by datatables
+- dashes
+- underscores
+*/
+
+.sparql-results {
+  // Row-number (first) column: center it, overriding DataTables' automatic numeric right-align.
+  // Not nested under .dataTables_wrapper because DataTables 2.x wraps the table in .dt-layout-* instead.
+  table.dataTable td.rowNumberCol {
+    text-align: center;
+  }
+
+  // Compact rows
+  table.dataTable > tbody > tr > td,
+  table.dataTable > tbody > tr > th {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+  table.dataTable > thead > tr > th,
+  table.dataTable > thead > tr > td {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .tableControls {
+    display: flex;
+    align-items: center;
+    padding: 0px;
+    padding-right: 5px;
+    flex-wrap: wrap;
+
+    .tableFilter,
+    .tableSizer {
+      height: 100%;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 2px solid #ccc;
+      box-shadow: none;
+      background-color: transparent;
+      -webkit-appearance: none;
+      appearance: none;
+      &:focus {
+        border-color: #337ab7;
+        outline: none;
+      }
+    }
+
+    .tableFilter {
+      margin-right: 10px;
+    }
+
+    .tableSizer {
+      cursor: pointer;
+      // appearance:none drops the native arrow, so draw a flat chevron and pad for it.
+      padding-right: 22px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+    }
+    .switch {
+      display: flex;
+      align-items: center;
+      margin-right: 10px;
+    }
+  }
+  .dataTable.ellipseTable {
+    white-space: nowrap;
+    div:not(.expanded) {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+  .dataTable:not(.ellipseTable) {
+    div:not(.expanded) {
+      word-break: break-all;
+    }
+  }
+  .expanded {
+    white-space: normal;
+    word-break: break-all;
+  }
+  .expandable:not(.expanded) {
+    cursor: pointer;
+    a {
+      pointer-events: none;
+    }
+  }
+
+  .dt-container {
+    font-size: 0.9em;
+    min-width: 100%;
+    .dataTable {
+      min-width: 100%;
+      box-sizing: border-box;
+      // Override border-bottom datatables styling
+      &.no-footer {
+        border-bottom: none;
+      }
+
+      tbody tr:hover {
+        background-color: #f9f9f9;
+      }
+
+      thead tr th {
+        //cannot select text anyway (as headers are buttons as well)
+        //By setting it to none explicitly, we won't have issues when resizing columns _and_ selecting text at the meantime
+        user-select: none;
+        font-weight: bold;
+        text-align: start;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        border: none;
+        min-width: 28px;
+        &:hover {
+          background-color: #f9f9f9;
+        }
+      }
+
+      td {
+        & > div {
+          hyphens: auto;
+          &.rowNumber {
+            word-break: keep-all;
+            overflow: visible;
+            text-align: center;
+          }
+        }
+        .tableEllipse {
+          cursor: pointer;
+          font-weight: bold;
+          padding: 0 2px;
+          background-color: #428bca33;
+          border-radius: 2px;
+          margin: 0 3px;
+        }
+      }
+    }
+
+    /**
+      Selector for pagination element
+    */
+    div.dt-paging {
+      button.dt-paging-button {
+        border: none;
+        background: transparent;
+
+        // When the buttons are disabled show the default YASR disabled color.
+        // `!important` to beat DataTables' own `!important` disabled-color rule.
+        &.disabled {
+          color: #505050 !important;
+        }
+
+        &.current {
+          border: none;
+          background: transparent;
+          text-decoration: underline !important; // dataTables made the text-decoration important
+        }
+
+        &:hover {
+          border: none;
+          background: transparent;
+
+          // Don't override the disabled grayed out style
+          &:not(.disabled) {
+            color: black !important; // dataTables made the color important
+          }
+        }
+
+        &:active {
+          box-shadow: none;
+        }
+      }
+    }
+  }
+}

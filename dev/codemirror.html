@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/sparql-studio.svg" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>SPARQL Studio · CodeMirror</title>
+  </head>
+  <body>
+    <div class="navBar">
+      <nav style="display: flex">
+        <img class="logo" src="/sparql-studio.svg" style="max-height:50px;padding:5px;margin-left: 10px" alt="SPARQL Studio Logo" />
+        <ul style="display: flex; list-style: none; align-self: center">
+          <li class="navItem"><a class="nav-link" href="/">SPARQL Studio</a></li>
+          <li class="navItem active"><a class="nav-link" href="codemirror">CodeMirror</a></li>
+          <li class="navItem"><a class="nav-link" href="editor_results">Editor & Results</a></li>
+        </ul>
+        <button class="themeToggle" id="darkModeToggle" type="button"></button>
+      </nav>
+    </div>
+
+    <div id="sparqlStudio"></div>
+
+    <script type="module">
+      import SparqlStudio from "@rdfjs/sparql-studio";
+      import SparqlEditor from "@rdfjs/sparql-editor-codemirror";
+      import { qlueLs } from "@rdfjs/sparql-utils";
+      import QlueLsWorker from "./qluels.worker?worker";
+      import SwlsWorker from "./swls.worker?worker";
+      import TraqulaWorker from "./traqula.worker?worker";
+      import { setupThemeToggle, DEMO_ENDPOINT } from "./utils";
+
+      const theme = setupThemeToggle((t) => window.sparqlStudio.editor?.setTheme(t));
+
+      const endpointOf = () => window.sparqlStudio?.getTab()?.getEndpoint() ?? DEMO_ENDPOINT;
+      const onReady = (conn) => {
+        qlueLs.configureSettings(conn, qlueLs.defaultSettings);
+        qlueLs.configureBackend(conn, endpointOf());
+      };
+      const onEndpointChange = (conn, endpoint) => qlueLs.configureBackend(conn, endpoint);
+
+      window.sparqlStudio = new SparqlStudio(document.getElementById("sparqlStudio"), {
+        requestConfig: { endpoint: DEMO_ENDPOINT },
+        editor: (parent, conf) =>
+          new SparqlEditor(parent, {
+            ...conf,
+            theme,
+            languageServers: [
+              {
+                label: "Qlue-ls",
+                description: "SPARQL language server with endpoint-powered completions",
+                worker: () => new QlueLsWorker({ name: "qlue-ls" }),
+                onReady,
+                onEndpointChange,
+                configSchema: qlueLs.settingsSchema,
+                configCallback: (conn, settings) => qlueLs.configureSettings(conn, settings),
+              },
+              {
+                label: "swls",
+                description: "Semantic web language server",
+                worker: () => new SwlsWorker({ name: "swls" }),
+              },
+              {
+                label: "Traqula",
+                description: "JS SPARQL 1.2 parser (diagnostics only)",
+                worker: () => new TraqulaWorker({ name: "traqula-ls" }),
+              },
+            ],
+          }),
+      });
+    </script>
+  </body>
+</html>

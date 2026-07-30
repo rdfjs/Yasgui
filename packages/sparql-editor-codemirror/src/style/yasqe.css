@@ -1,0 +1,94 @@
+.sparql-editor {
+  position: relative;
+}
+.sparql-editor .cm-editor {
+  min-height: 60px;
+}
+.sparql-editor .svgImg {
+  display: inline-block;
+}
+.sparql-editor span.shortlinkErr {
+  font-size: small;
+  color: red;
+  font-weight: bold;
+  float: left;
+}
+.sparql-editor .notificationContainer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  bottom: 0;
+}
+.sparql-editor .notification {
+  z-index: 4;
+  padding: 0 5px;
+  max-height: 0px;
+  /* Clip while collapsed so the (possibly multi-line) text disappears with the box on dismiss. */
+  overflow: hidden;
+  color: #999;
+  background-color: #eee;
+  font-size: 90%;
+  text-align: center;
+  transition: max-height 0.2s ease-in;
+  border-top-right-radius: 2px;
+  border-top-left-radius: 2px;
+}
+.sparql-editor .notification.active {
+  max-height: 3rem;
+}
+.sparql-editor .parseErrorIcon {
+  width: 13px;
+  height: 13px;
+  margin-top: 2px;
+  margin-left: 2px;
+}
+.sparql-editor .parseErrorIcon svg g {
+  fill: red;
+}
+.sparql-editor .sparql-editor_tooltip {
+  background: #333;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 5px;
+  color: #fff;
+  padding: 5px 15px;
+  width: 220px;
+  white-space: pre-wrap;
+  white-space: normal;
+  margin-top: 5px;
+}
+.sparql-editor .notificationLoader {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+}
+.sparql-editor .resizeWrapper {
+  width: 100%;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: row-resize;
+}
+.sparql-editor .resizeChip {
+  width: 20%;
+  height: 4px;
+  background-color: #d1d1d1;
+  visibility: hidden;
+  border-radius: 2px;
+}
+/* Show resizeChip when sparql-editor is hovered */
+.sparql-editor:hover .resizeChip {
+  visibility: visible;
+}
+
+[data-theme="dark"] .sparql-editor .notification {
+  color: #aaa;
+  background-color: #2a2a2a;
+}
+[data-theme="dark"] .sparql-editor .resizeChip {
+  background-color: #3a3a3a;
+}
+
+/* Language-server error notifications render via the shared `createLspErrorNotification` helper
+   (@rdfjs/sparql-utils), which injects its own `.sparql-editor-lsp-error` styles. */

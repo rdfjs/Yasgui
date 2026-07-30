@@ -1,8 +1,8 @@
 ---
-"@zazuko/yasgui": patch
-"@zazuko/yasgui-utils": patch
-"@zazuko/yasqe": patch
-"@zazuko/yasr": patch
+"@rdfjs/sparql-studio": patch
+"@rdfjs/sparql-utils": patch
+"@rdfjs/sparql-editor-monaco": patch
+"@rdfjs/sparql-results": patch
 ---
 
 - Migrate from `webpack` to `vite` for the bundler and dev server

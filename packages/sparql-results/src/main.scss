@@ -1,0 +1,161 @@
+@use "scss/variables.scss";
+.sparql-results {
+  .sparql-results_btn {
+    border: none;
+    background: inherit;
+  }
+  .svgImg {
+    display: flex;
+    flex-direction: row;
+    svg {
+      max-width: 100%;
+      max-height: 100%;
+      width: 15px;
+      height: 15px;
+      align-self: center;
+    }
+  }
+  .sparql-results_btn.sparql-results_external_ref_btn {
+    font-weight: 600;
+    user-select: none;
+    // Active and focus shouldn't color the button since it'll open a new page
+    &:active,
+    &:focus {
+      color: inherit;
+      text-decoration-color: inherit;
+    }
+    .svgImg svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+  a {
+    color: #428bca;
+    text-decoration: none;
+    &:hover,
+    &:active {
+      outline: 0;
+      color: #2a6496;
+      text-decoration: underline;
+    }
+  }
+  .sparql-results_btnGroup {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden; // We shouldn't wrap, and therefore never draw a vertical scrollBar
+    .plugin_icon {
+      height: 15px;
+      width: 15px;
+      margin-right: 5px;
+      text-align: center;
+    }
+    .sparql-results_btn {
+      // redeclared here to target sparql-results_btns in btnGroup
+      border-bottom: 2px solid transparent;
+      &.selected {
+        border-bottom: 2px solid #337ab7;
+      }
+      padding-left: 6px;
+      padding-right: 6px;
+      margin-left: 6px;
+      margin-right: 6px;
+    }
+  }
+
+  // Default med screen +
+  @media (max-width: 768px) {
+    .sparql-results_btn {
+      span {
+        display: none;
+      }
+
+      .plugin_icon {
+        margin-right: 0px;
+      }
+    }
+  }
+
+  .sparql-results_header {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .sparql-results_fallback_info:not(:empty) {
+    margin-top: 5px;
+    border: 1px solid #d1d1d1;
+    padding: 0.5rem;
+    background: #f7f7f7;
+    p {
+      margin: 0;
+    }
+  }
+  .sparql-results_help_variable {
+    background: #dff0ff;
+    color: #428bca;
+  }
+  .sparql-results_response_chip {
+    color: #505050;
+    background: #f5f5f5;
+    border-radius: 6px;
+    display: flex;
+    font-size: 11pt;
+    max-height: 16pt;
+    align-self: center;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    padding: 6px 6px;
+    margin-left: 5px;
+    overflow: visible;
+    box-sizing: border-box;
+    &.empty {
+      display: none;
+    }
+  }
+  .sparql-results_plugin_control {
+    display: flex;
+    margin-left: auto;
+    align-items: center;
+    &:empty {
+      display: none;
+    }
+  }
+  .sparql-results_btn {
+    color: #505050;
+    fill: #505050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+    white-space: nowrap;
+    padding: 6px 12px;
+    // border-radius: 4px;
+    overflow: visible;
+    box-sizing: border-box;
+    &.btn_icon {
+      padding: 4px 8px;
+    }
+    &[disabled],
+    &.disabled {
+      cursor: default;
+      opacity: 0.5;
+      box-shadow: none;
+    }
+    &:not(.disabled):hover {
+      fill: black;
+      color: black;
+    }
+    &:focus,
+    &.selected {
+      color: #337ab7;
+      fill: #337ab7;
+    }
+  }
+  .space_element {
+    flex-grow: 1;
+    min-width: 10px;
+  }
+}

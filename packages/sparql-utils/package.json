@@ -1,0 +1,39 @@
+{
+  "name": "@rdfjs/sparql-utils",
+  "version": "4.6.1",
+  "description": "Shared utilities for the SparqlStudio libraries",
+  "type": "module",
+  "main": "build/sparql-utils.js",
+  "module": "build/sparql-utils.js",
+  "types": "build/ts/src/index.d.ts",
+  "files": ["build"],
+  "exports": {
+    ".": {
+      "types": "./build/ts/src/index.d.ts",
+      "import": "./build/sparql-utils.js"
+    },
+    "./*": "./*"
+  },
+  "license": "MIT",
+  "author": "Triply <info@triply.cc>",
+  "homepage": "https://github.com/rdfjs/Yasgui",
+  "bugs": "https://github.com/rdfjs/Yasgui/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rdfjs/Yasgui.git",
+    "directory": "packages/sparql-utils"
+  },
+  "dependencies": {
+    "dompurify": "^3.2.4",
+    "lodash-es": "^4.18.1",
+    "query-string": "^6.10.1",
+    "store": "^2.0.12"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.3",
+    "@types/node": "^22.5.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

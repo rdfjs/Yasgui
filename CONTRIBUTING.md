@@ -57,6 +57,10 @@ Using Changesets allows for precise control over releases and supports versionin
 - [Changesets GitHub repository](https://github.com/changesets/changesets)
 - [Common Questions about Changesets](https://github.com/changesets/changesets/blob/main/docs/common-questions.md)
 
+### Upgrade dependencies
+
+Checkout [`monaco-languageclient` version compatiblity table](https://github.com/TypeFox/monaco-languageclient/blob/main/docs/versions-and-history.md) to upgrade the packages version related to the monaco editor and language client.
+
 ### Code of Conduct
 
 We are committed to fostering a welcoming and inclusive environment.
