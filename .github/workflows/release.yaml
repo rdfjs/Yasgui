@@ -20,14 +20,15 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # Fetch all history for all tags and branches, so that Changesets can determine the version bump
           fetch-depth: 0
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "lts/*"
+          registry-url: "https://registry.npmjs.org"
           cache: npm
 
       - name: Disable AppArmor
@@ -38,13 +39,11 @@ jobs:
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
-          publish: npm run release
-          commit: "chore: release"
-          title: "Merge to release"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          publish-script: npm run release
+          commit-message: "chore: release"
+          pr-title: "Merge to release"
 
       - name: Add build archives to new release
         if: steps.changesets.outputs.published == 'true'
@@ -54,7 +53,7 @@ jobs:
           tar -czvf build.tar.gz build
 
           # Upload the archive to all published packages
-          echo '${{ steps.changesets.outputs.publishedPackages }}' | jq -r '.[]|[.name, .version] | @tsv' |
+          echo '${{ steps.changesets.outputs.published-packages }}' | jq -r '.[]|[.name, .version] | @tsv' |
           while IFS=$'\t' read -r name version; do
             tag="$name@$version"
 
