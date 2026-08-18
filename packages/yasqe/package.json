@@ -1,11 +1,13 @@
 {
   "name": "@zazuko/yasqe",
   "description": "Yet Another SPARQL Query Editor",
-  "version": "4.6.1",
+  "version": "4.6.2",
   "main": "build/yasqe.min.js",
   "module": "build/yasqe.esm.js",
   "types": "build/ts/src/index.d.ts",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "exports": {
     ".": {
       "types": "./build/ts/src/index.d.ts",
@@ -16,7 +18,12 @@
   },
   "license": "MIT",
   "author": "Triply <info@triply.cc>",
-  "homepage": "https://github.com/zazuko/Yasgui",
+  "contributors": [
+    {
+      "name": "Zazuko GmbH"
+    }
+  ],
+  "homepage": "https://github.com/rdfjs/Yasgui",
   "engines": {
     "node": ">= 8"
   },
@@ -27,14 +34,14 @@
     "Semantic Web",
     "Linked Data"
   ],
-  "bugs": "https://github.com/zazuko/Yasgui/issues/",
+  "bugs": "https://github.com/rdfjs/Yasgui/issues/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zazuko/Yasgui.git",
+    "url": "https://github.com/rdfjs/Yasgui.git",
     "directory": "packages/yasqe"
   },
   "dependencies": {
-    "@zazuko/yasgui-utils": "^4.6.1",
+    "@zazuko/yasgui-utils": "^4.6.2",
     "codemirror": "^5.51.0",
     "lodash-es": "^4.18.1",
     "query-string": "^6.10.1"
@@ -45,6 +52,7 @@
     "@types/node": "^22.5.4"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }

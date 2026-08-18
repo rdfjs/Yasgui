@@ -1,11 +1,13 @@
 {
   "name": "@zazuko/yasgui-utils",
-  "version": "4.6.1",
+  "version": "4.6.2",
   "description": "Utils for YASGUI libs",
   "main": "build/utils.min.js",
   "module": "build/utils.esm.js",
   "types": "build/ts/src/index.d.ts",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "exports": {
     ".": {
       "types": "./build/ts/src/index.d.ts",
@@ -16,11 +18,16 @@
   },
   "license": "MIT",
   "author": "Triply <info@triply.cc>",
-  "homepage": "https://github.com/zazuko/Yasgui",
-  "bugs": "https://github.com/zazuko/Yasgui/issues",
+  "contributors": [
+    {
+      "name": "Zazuko GmbH"
+    }
+  ],
+  "homepage": "https://github.com/rdfjs/Yasgui",
+  "bugs": "https://github.com/rdfjs/Yasgui/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zazuko/Yasgui.git",
+    "url": "https://github.com/rdfjs/Yasgui.git",
     "directory": "packages/utils"
   },
   "dependencies": {
@@ -31,6 +38,7 @@
     "@types/node": "^22.5.4"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }
