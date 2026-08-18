@@ -37,7 +37,7 @@
   "bugs": "https://github.com/rdfjs/Yasgui/issues/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rdfjs/Yasgui.git",
+    "url": "git+https://github.com/rdfjs/Yasgui.git",
     "directory": "packages/yasqe"
   },
   "dependencies": {
