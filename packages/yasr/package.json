@@ -18,10 +18,12 @@
   },
   "license": "MIT",
   "author": "Triply <info@triply.cc>",
-  "homepage": "https://github.com/zazuko/Yasgui",
-  "engines": {
-    "node": ">= 8"
-  },
+  "contributors": [
+    {
+      "name": "Zazuko GmbH"
+    }
+  ],
+  "homepage": "https://github.com/rdfjs/Yasgui",
   "keywords": [
     "JavaScript",
     "SPARQL",
@@ -29,10 +31,10 @@
     "Semantic Web",
     "Linked Data"
   ],
-  "bugs": "https://github.com/zazuko/Yasgui/issues/",
+  "bugs": "https://github.com/rdfjs/Yasgui/issues/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zazuko/Yasgui.git",
+    "url": "https://github.com/rdfjs/Yasgui.git",
     "directory": "packages/yasr"
   },
   "dependencies": {
@@ -62,6 +64,7 @@
     "ts-essentials": "^7.0.1"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }

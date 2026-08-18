@@ -18,11 +18,16 @@
   },
   "license": "MIT",
   "author": "Triply <info@triply.cc>",
-  "homepage": "https://github.com/zazuko/Yasgui",
-  "bugs": "https://github.com/zazuko/Yasgui/issues",
+  "contributors": [
+    {
+      "name": "Zazuko GmbH"
+    }
+  ],
+  "homepage": "https://github.com/rdfjs/Yasgui",
+  "bugs": "https://github.com/rdfjs/Yasgui/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zazuko/Yasgui.git",
+    "url": "https://github.com/rdfjs/Yasgui.git",
     "directory": "packages/utils"
   },
   "dependencies": {
@@ -33,6 +38,7 @@
     "@types/node": "^22.5.4"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }
