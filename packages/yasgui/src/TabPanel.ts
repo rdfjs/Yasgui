@@ -77,6 +77,11 @@ export default class TabPanel {
     // Draw Accept headers
     this.setAcceptHeader_select(<string>reqConfig.acceptHeaderSelect);
     this.setAcceptHeader_graph(<string>reqConfig.acceptHeaderGraph);
+
+    if (typeof reqConfig.withCredentials !== "function") {
+      this.setUseLogin(reqConfig.withCredentials);
+    }
+
     if (typeof reqConfig.args !== "function") {
       this.setArguments([...(reqConfig.args || [])]);
     }
@@ -191,6 +196,32 @@ export default class TabPanel {
     );
 
     this.menuElement.appendChild(acceptWrapper);
+  }
+
+  private setUseLogin!: (useLogin: boolean) => void;
+  private drawUseLoginInput() {
+    const useLoginWrapper = document.createElement("div");
+    addClass(useLoginWrapper, "requestConfigWrapper");
+    createLabel("Use browser login", useLoginWrapper);
+
+    // Create Button
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    if (this.tab.getRequestConfig().withCredentials) {
+      checkbox.checked = true;
+    }
+
+    this.setUseLogin = (useLogin) => {
+      checkbox.checked = useLogin;
+    };
+    checkbox.onclick = (ev) => {
+      this.tab.setRequestConfig({ withCredentials: checkbox.checked });
+      ev.stopPropagation();
+    };
+
+    // Add elements to container
+    useLoginWrapper.appendChild(checkbox);
+    this.menuElement.appendChild(useLoginWrapper);
   }
 
   private setArguments!: (args: TextInputPair[]) => void;
@@ -335,6 +366,9 @@ export default class TabPanel {
   private drawBody() {
     // Draw request Method
     this.drawRequestMethodSelector();
+
+    // Draw use login
+    this.drawUseLoginInput();
 
     // Draw Accept headers
     this.drawAcceptSelector();
