@@ -1,0 +1,24 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+  "tsconfig": "./tsconfig.json",
+  "name": "SPARQL Studio API",
+  "entryPointStrategy": "resolve",
+  "excludeReferences": true,
+  "excludeExternals": true,
+  "externalPattern": ["**/node_modules/**"],
+  "entryPoints": [
+    "packages/sparql-studio/src/index.ts",
+    "packages/sparql-editor-monaco/src/index.ts",
+    "packages/sparql-results/src/index.ts",
+    "packages/sparql-utils/src/index.ts"
+  ],
+  "out": "docs/api",
+  "docsRoot": "docs",
+  "readme": "none",
+  "githubPages": false,
+  "hideGenerator": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "sort": ["source-order"]
+}

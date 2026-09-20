@@ -1,0 +1,516 @@
+import { EventEmitter } from "events";
+import { addClass, removeClass, getAsValue } from "@rdfjs/sparql-utils";
+import { TabListEl } from "./TabElements";
+import TabPanel from "./TabPanel";
+import { defaultQueryValue } from "@rdfjs/sparql-utils";
+import type { IEditor, RequestConfig, PlainRequestConfig } from "@rdfjs/sparql-utils";
+import {
+  default as SparqlResults,
+  Parser,
+  Config as SparqlResultsConfig,
+  PersistentConfig as YasrPersistentConfig,
+} from "@rdfjs/sparql-results";
+import { mapValues, eq, mergeWith, words, deburr, invert } from "lodash-es";
+import * as shareLink from "./linkUtils";
+import EndpointSelect from "./endpointSelect";
+import "./tab.scss";
+import { getRandomId, default as SparqlStudio, YasguiRequestConfig } from "./";
+export interface PersistedJsonYasr extends YasrPersistentConfig {
+  responseSummary: Parser.ResponseSummary;
+}
+export interface PersistedJson {
+  name: string;
+  id: string;
+  editor: {
+    value: string;
+    editorHeight?: string;
+  };
+  results: {
+    settings: YasrPersistentConfig;
+    response: Parser.ResponseSummary | undefined;
+  };
+  requestConfig: YasguiRequestConfig;
+}
+export interface Tab {
+  on(event: string | symbol, listener: (...args: any[]) => void): this;
+
+  on(event: "change", listener: (tab: Tab, config: PersistedJson) => void): this;
+  emit(event: "change", tab: Tab, config: PersistedJson): boolean;
+  on(event: "query", listener: (tab: Tab) => void): this;
+  emit(event: "query", tab: Tab): boolean;
+  on(event: "queryBefore", listener: (tab: Tab) => void): this;
+  emit(event: "queryBefore", tab: Tab): boolean;
+  on(event: "queryAbort", listener: (tab: Tab) => void): this;
+  emit(event: "queryAbort", tab: Tab): boolean;
+  on(event: "queryResponse", listener: (tab: Tab) => void): this;
+  emit(event: "queryResponse", tab: Tab): boolean;
+  on(event: "close", listener: (tab: Tab) => void): this;
+  emit(event: "close", tab: Tab): boolean;
+  on(event: "endpointChange", listener: (tab: Tab, endpoint: string) => void): this;
+  emit(event: "endpointChange", tab: Tab, endpoint: string): boolean;
+  on(event: "autocompletionShown", listener: (tab: Tab, widget: any) => void): this;
+  emit(event: "autocompletionShown", tab: Tab, widget: any): boolean;
+  on(event: "autocompletionClose", listener: (tab: Tab) => void): this;
+  emit(event: "autocompletionClose", tab: Tab): boolean;
+}
+export class Tab extends EventEmitter {
+  private persistentJson: PersistedJson;
+  public sparqlStudio: SparqlStudio;
+  // The editor is a single shared instance owned by SparqlStudio (built by the consumer-supplied
+  // factory). Tabs read it through this getter and swap content on activation.
+  private get editor(): IEditor | undefined {
+    return this.sparqlStudio.editor;
+  }
+  private results: SparqlResults | undefined;
+  private rootEl: HTMLDivElement | undefined;
+  private controlBarEl: HTMLDivElement | undefined;
+  private editorWrapperEl: HTMLDivElement | undefined;
+  private resultsWrapperEl: HTMLDivElement | undefined;
+  private endpointSelect: EndpointSelect | undefined;
+  private tabPanel?: TabPanel;
+  constructor(sparqlStudio: SparqlStudio, conf: PersistedJson) {
+    super();
+    if (!conf || conf.id === undefined) throw new Error("Expected a valid configuration to initialize tab with");
+    this.sparqlStudio = sparqlStudio;
+    this.persistentJson = conf;
+  }
+  public name() {
+    return this.persistentJson.name;
+  }
+  public getPersistedJson() {
+    return this.persistentJson;
+  }
+  public getId() {
+    return this.persistentJson.id;
+  }
+  private draw() {
+    if (this.rootEl) return; //aready drawn
+    this.rootEl = document.createElement("div");
+    this.rootEl.className = "tabPanel";
+    this.rootEl.id = this.persistentJson.id;
+    this.rootEl.setAttribute("role", "tabpanel");
+    this.rootEl.setAttribute("aria-labelledby", "tab-" + this.persistentJson.id);
+
+    // We group controlbar and SparqlEditor, so that users can easily .appendChild() to the .editorwrapper div
+    // to add a div that goes alongside the controlbar and editor, while YASR still goes full width
+    // Useful for adding an infos div that goes alongside the editor without needing to rebuild the whole SparqlStudio class
+    const editorWrapper = document.createElement("div");
+    editorWrapper.className = "editorwrapper";
+    const controlbarAndEditorDiv = document.createElement("div");
+    // controlbar
+    this.controlBarEl = document.createElement("div");
+    this.controlBarEl.className = "controlbar";
+    controlbarAndEditorDiv.appendChild(this.controlBarEl);
+
+    // SPARQL Editor
+    this.editorWrapperEl = document.createElement("div");
+    controlbarAndEditorDiv.appendChild(this.editorWrapperEl);
+    editorWrapper.appendChild(controlbarAndEditorDiv);
+
+    // SPARQL Results
+    this.resultsWrapperEl = document.createElement("div");
+
+    this.initTabSettingsMenu();
+    this.rootEl.appendChild(editorWrapper);
+    this.rootEl.appendChild(this.resultsWrapperEl);
+    this.initControlbar();
+    this.initYasr();
+    this.sparqlStudio._setPanel(this.persistentJson.id, this.rootEl);
+  }
+  public hide() {
+    removeClass(this.rootEl, "active");
+  }
+  public show() {
+    this.draw();
+    addClass(this.rootEl, "active");
+    this.sparqlStudio.tabElements.selectTab(this.persistentJson.id);
+    // Move the single shared Monaco editor into this tab's wrapper and load this tab's content/endpoint
+    if (this.editorWrapperEl) this.sparqlStudio.syncEditorsWithTab(this, this.editorWrapperEl);
+    if (this.editor) {
+      this.editor.refresh();
+      if (this.sparqlStudio.config.autofocus) this.editor.focus();
+    }
+    if (this.results) {
+      this.results.refresh();
+    }
+    //refresh, as other tabs might have changed the endpoint history
+    this.setEndpoint(this.getEndpoint(), this.sparqlStudio.persistentConfig.getEndpointHistory());
+  }
+  public select() {
+    this.sparqlStudio.selectTabId(this.persistentJson.id);
+  }
+  public close() {
+    if (this.editor) this.editor.abortQuery();
+    if (this.sparqlStudio.getTab() === this) {
+      //it's the active tab
+      //first select other tab
+      const tabs = this.sparqlStudio.persistentConfig.getTabs();
+      const i = tabs.indexOf(this.persistentJson.id);
+      if (i > -1) {
+        this.sparqlStudio.selectTabId(tabs[i === tabs.length - 1 ? i - 1 : i + 1]);
+      }
+    }
+    this.sparqlStudio._removePanel(this.rootEl);
+    this.sparqlStudio.persistentConfig.deleteTab(this.persistentJson.id);
+    this.sparqlStudio.emit("tabClose", this.sparqlStudio, this);
+    this.emit("close", this);
+    this.sparqlStudio.tabElements.get(this.persistentJson.id).delete();
+    delete this.sparqlStudio._tabs[this.persistentJson.id];
+  }
+  public getQuery() {
+    // When this tab is the one currently shown in the shared editor, read the live value;
+    // otherwise return the persisted value (the editor is showing another tab).
+    if (this.sparqlStudio.getTab() === this && this.editor) return this.editor.getValue();
+    return this.persistentJson.editor.value;
+  }
+  public setQuery(query: string) {
+    this.persistentJson.editor.value = query;
+    if (this.sparqlStudio.getTab() === this) this.editor?.setValue(query);
+    this.emit("change", this, this.persistentJson);
+    return this;
+  }
+  public getRequestConfig() {
+    return this.persistentJson.requestConfig;
+  }
+  private initControlbar() {
+    this.initEndpointSelectField();
+    if (this.sparqlStudio.config.endpointInfo && this.controlBarEl) {
+      this.controlBarEl.appendChild(this.sparqlStudio.config.endpointInfo());
+    }
+  }
+  public getEditor() {
+    return this.editor;
+  }
+  public getResults() {
+    return this.results;
+  }
+  private initTabSettingsMenu() {
+    if (!this.rootEl || !this.controlBarEl)
+      throw new Error("Need to initialize wrapper elements before drawing tab pabel");
+    this.tabPanel = new TabPanel(this, this.rootEl, this.controlBarEl);
+  }
+
+  private initEndpointSelectField() {
+    if (!this.controlBarEl) throw new Error("Need to initialize wrapper elements before drawing endpoint field");
+    this.endpointSelect = new EndpointSelect(
+      this.getEndpoint(),
+      this.controlBarEl,
+      this.sparqlStudio.config.endpointCatalogueOptions,
+      this.sparqlStudio.persistentConfig.getEndpointHistory(),
+    );
+    this.endpointSelect.on("select", (endpoint, endpointHistory) => {
+      this.setEndpoint(endpoint, endpointHistory);
+    });
+    this.endpointSelect.on("remove", (endpoint, endpointHistory) => {
+      this.setEndpoint(endpoint, endpointHistory);
+    });
+  }
+
+  private checkEndpointForCors(endpoint: string) {
+    if (this.sparqlStudio.config.corsProxy && !(endpoint in SparqlStudio.corsEnabled)) {
+      const askUrl = new URL(endpoint);
+      askUrl.searchParams.append("query", "ASK {?x ?y ?z}");
+      fetch(askUrl.toString())
+        .then(() => {
+          SparqlStudio.corsEnabled[endpoint] = true;
+        })
+        .catch((e) => {
+          // CORS error throws `TypeError: NetworkError when attempting to fetch resource.`
+          SparqlStudio.corsEnabled[endpoint] = e instanceof TypeError ? false : true;
+        });
+    }
+  }
+  public setEndpoint(endpoint: string, endpointHistory?: string[]) {
+    if (endpoint) endpoint = endpoint.trim();
+    if (endpointHistory && !eq(endpointHistory, this.sparqlStudio.persistentConfig.getEndpointHistory())) {
+      this.sparqlStudio.emit("endpointHistoryChange", this.sparqlStudio, endpointHistory);
+    }
+    this.checkEndpointForCors(endpoint); //little cost in checking this as we're caching the check results
+
+    if (this.persistentJson.requestConfig.endpoint !== endpoint) {
+      this.persistentJson.requestConfig.endpoint = endpoint;
+      this.emit("change", this, this.persistentJson);
+      this.emit("endpointChange", this, endpoint);
+    }
+    if (this.endpointSelect instanceof EndpointSelect) {
+      this.endpointSelect.setEndpoint(endpoint, endpointHistory);
+    }
+    // Notify of the endpoint change, but only when this tab is the one currently shown (otherwise
+    // we'd repoint the shared editor while it displays another tab)
+    if (endpoint && this.sparqlStudio.getTab() === this) this.sparqlStudio.emitEndpointChange(endpoint);
+    return this;
+  }
+  public getEndpoint(): string {
+    return getAsValue(this.persistentJson.requestConfig.endpoint, this.sparqlStudio);
+  }
+  /**
+   * Updates the position of the Tab's contextmenu
+   * Useful for when being scrolled
+   */
+  public updateContextMenu(): void {
+    this.getTabListEl().redrawContextMenu();
+  }
+  public getShareableLink(baseURL?: string): string {
+    return shareLink.createShareLink(baseURL || window.location.href, this);
+  }
+  public getShareObject() {
+    return shareLink.createShareConfig(this);
+  }
+  private getTabListEl(): TabListEl {
+    return this.sparqlStudio.tabElements.get(this.persistentJson.id);
+  }
+  public setName(newName: string) {
+    this.getTabListEl().rename(newName);
+    this.persistentJson.name = newName;
+    this.emit("change", this, this.persistentJson);
+    return this;
+  }
+  public hasResults() {
+    return !!this.results?.results;
+  }
+
+  public getName() {
+    return this.persistentJson.name;
+  }
+  public query(): Promise<any> {
+    if (!this.editor) return Promise.reject(new Error("No yasqe editor initialized"));
+    return this.editor.query();
+  }
+  public setRequestConfig(requestConfig: Partial<YasguiRequestConfig>) {
+    this.persistentJson.requestConfig = {
+      ...this.persistentJson.requestConfig,
+      ...requestConfig,
+    };
+
+    this.emit("change", this, this.persistentJson);
+  }
+
+  /**
+   * The SparqlStudio configuration object may contain a custom request config
+   * This request config object can contain getter functions, or plain json
+   * The plain json data is stored in persisted config, and editable via the
+   * tab pane.
+   * The getter functions are not. This function is about fetching this part of the
+   * request configuration, so we can merge this with the configuration from the
+   * persistent config and tab pane.
+   *
+   * Considering some values will never be persisted (things that should always be a function),
+   * we provide that as part of a whitelist called `keepDynamic`
+   */
+  private getStaticRequestConfig() {
+    const config: Partial<PlainRequestConfig> = {};
+    let key: keyof YasguiRequestConfig;
+    for (key in this.sparqlStudio.config.requestConfig) {
+      //This config option should never be static or persisted anyway
+      if (key === "adjustQueryBeforeRequest") continue;
+      const val = this.sparqlStudio.config.requestConfig[key];
+      if (typeof val === "function") {
+        (config[key] as any) = val(this.sparqlStudio);
+      }
+    }
+    return config;
+  }
+
+  /**
+   * Build the request config for this tab. Used by the shared YASQE instance (via
+   * SparqlStudio.updateEditorsContent) when this tab becomes active, so its query runs against this
+   * tab's endpoint/headers.
+   */
+  public getProcessedRequestConfig(): PlainRequestConfig {
+    const processedReqConfig: YasguiRequestConfig = {
+      //setting defaults
+      //@ts-ignore
+      acceptHeaderGraph: "text/turtle",
+      //@ts-ignore
+      acceptHeaderSelect: "application/sparql-results+json",
+      ...mergeWith(
+        {},
+        this.persistentJson.requestConfig,
+        this.getStaticRequestConfig(),
+        function customizer(objValue, srcValue) {
+          if (Array.isArray(objValue) || Array.isArray(srcValue)) {
+            return [...(objValue || []), ...(srcValue || [])];
+          }
+        },
+      ),
+      //Passing this manually. Dont want to use our own persistentJson, as that's flattened exclude functions
+      //The adjustQueryBeforeRequest is meant to be a function though, so let's copy that as is
+      adjustQueryBeforeRequest: this.sparqlStudio.config.requestConfig.adjustQueryBeforeRequest,
+    };
+    if (this.sparqlStudio.config.corsProxy && !SparqlStudio.corsEnabled[this.getEndpoint()]) {
+      return {
+        ...processedReqConfig,
+        args: [
+          ...(Array.isArray(processedReqConfig.args) ? processedReqConfig.args : []),
+          { name: "endpoint", value: this.getEndpoint() },
+          { name: "method", value: this.persistentJson.requestConfig.method },
+        ],
+        method: "POST",
+        endpoint: this.sparqlStudio.config.corsProxy,
+      } as PlainRequestConfig;
+    }
+    return processedReqConfig as PlainRequestConfig;
+  }
+  handleBlur = (yasqe: IEditor) => {
+    this.persistentJson.editor.value = yasqe.getValue();
+    this.emit("change", this, this.persistentJson);
+  };
+  handleQuery = (yasqe: IEditor) => {
+    //the blur event might not have fired (e.g. when pressing ctrl-enter). So, we'd like to persist the query as well if needed
+    if (yasqe.getValue() !== this.persistentJson.editor.value) {
+      this.persistentJson.editor.value = yasqe.getValue();
+      this.emit("change", this, this.persistentJson);
+    }
+    this.emit("query", this);
+  };
+  handleQueryAbort = () => {
+    this.emit("queryAbort", this);
+  };
+  handleQueryBefore = () => {
+    this.emit("queryBefore", this);
+  };
+  handleResize = (_yasqe: IEditor, newSize: string) => {
+    this.persistentJson.editor.editorHeight = newSize;
+    this.emit("change", this, this.persistentJson);
+  };
+  handleAutocompletionShown = (_yasqe: IEditor, widget: string) => {
+    this.emit("autocompletionShown", this, widget);
+  };
+  handleAutocompletionClose = (_yasqe: IEditor) => {
+    this.emit("autocompletionClose", this);
+  };
+  handleQueryResponse = (_yasqe: IEditor, response: any, duration: number) => {
+    this.emit("queryResponse", this);
+    if (!this.results) throw new Error("Resultset visualizer not initialized. Cannot draw results");
+    this.results.setResponse(response, duration);
+    if (!this.results.results) return;
+    if (!this.results.results.hasError()) {
+      this.persistentJson.results.response = this.results.results.getAsStoreObject(
+        this.sparqlStudio.config.results.maxPersistentResponseSize,
+      );
+    } else {
+      // Don't persist if there is an error and remove the previous result
+      this.persistentJson.results.response = undefined;
+    }
+    this.emit("change", this, this.persistentJson);
+  };
+
+  private initYasr() {
+    if (!this.resultsWrapperEl) throw new Error("Wrapper for SPARQL Results does not exist");
+
+    const sparqlResultsConf: Partial<SparqlResultsConfig> = {
+      persistenceId: null, //sparqlStudio handles persistent storing
+      prefixes: (sparqlResults) => {
+        // Prefixes defined in YASR's config
+        const prefixesFromYasrConf =
+          typeof this.sparqlStudio.config.results.prefixes === "function"
+            ? this.sparqlStudio.config.results.prefixes(sparqlResults)
+            : this.sparqlStudio.config.results.prefixes;
+        const prefixesFromEditor = this.editor?.getPrefixesFromQuery();
+        // Invert twice to make sure both keys and values are unique
+        // Editor's prefixes should take precedence
+        return invert(invert({ ...prefixesFromYasrConf, ...prefixesFromEditor }));
+      },
+      defaultPlugin: this.persistentJson.results.settings.selectedPlugin,
+      getPlainQueryLinkToEndpoint: () => {
+        if (this.editor) {
+          return shareLink.appendArgsToUrl(
+            this.getEndpoint(),
+            this.editor.getUrlArguments(this.persistentJson.requestConfig as RequestConfig<any>),
+          );
+        }
+      },
+      plugins: mapValues(this.persistentJson.results.settings.pluginsConfig, (conf) => ({
+        dynamicConfig: conf,
+      })),
+      errorRenderers: [
+        // Use custom error renderer
+        getCorsErrorRenderer(this),
+        // Add default renderers to the end, to give our custom ones priority.
+        ...(SparqlResults.defaults.errorRenderers || []),
+      ],
+    };
+    // Allow getDownloadFilName to be overwritten by the global config
+    if (sparqlResultsConf.getDownloadFileName === undefined) {
+      sparqlResultsConf.getDownloadFileName = () => words(deburr(this.getName())).join("-");
+    }
+
+    this.results = new SparqlResults(this.resultsWrapperEl, sparqlResultsConf, this.persistentJson.results.response);
+
+    //populate our own persistent config
+    this.persistentJson.results.settings = this.results.getPersistentConfig();
+    this.results.on("change", () => {
+      if (this.results) {
+        this.persistentJson.results.settings = this.results.getPersistentConfig();
+      }
+
+      this.emit("change", this, this.persistentJson);
+    });
+  }
+  destroy() {
+    this.removeAllListeners();
+    this.tabPanel?.destroy();
+    this.endpointSelect?.destroy();
+    this.endpointSelect = undefined;
+    this.results?.destroy();
+    this.results = undefined;
+    // The Monaco editor is shared/owned by SparqlStudio, so a tab must not destroy it. If this tab is the
+    // one currently shown, abort any running query so it doesn't resolve against a closed tab.
+    if (this.sparqlStudio.getTab() === this) this.editor?.abortQuery();
+  }
+  public static getDefaults(sparqlStudio?: SparqlStudio): PersistedJson {
+    return {
+      editor: {
+        value: defaultQueryValue,
+      },
+      results: {
+        response: undefined,
+        settings: {
+          selectedPlugin: sparqlStudio ? sparqlStudio.config.results.defaultPlugin : "table",
+          pluginsConfig: {},
+        },
+      },
+      requestConfig: sparqlStudio ? sparqlStudio.config.requestConfig : { ...SparqlStudio.defaults.requestConfig },
+      id: getRandomId(),
+      name: sparqlStudio ? sparqlStudio.createTabName() : SparqlStudio.defaults.tabName,
+    };
+  }
+}
+
+export default Tab;
+
+// Return a URL that is safe to display
+const safeEndpoint = (endpoint: string): string => {
+  const url = new URL(endpoint);
+  return encodeURI(url.href);
+};
+
+function getCorsErrorRenderer(tab: Tab) {
+  return async (error: Parser.ErrorSummary): Promise<HTMLElement | undefined> => {
+    if (!error.status) {
+      // Only show this custom error if
+      const shouldReferToHttp =
+        new URL(tab.getEndpoint()).protocol === "http:" && window.location.protocol === "https:";
+      if (shouldReferToHttp) {
+        const errorEl = document.createElement("div");
+        const errorSpan = document.createElement("p");
+        errorSpan.innerHTML = `You are trying to query an HTTP endpoint (<a href="${safeEndpoint(
+          tab.getEndpoint(),
+        )}" target="_blank" rel="noopener noreferrer">${safeEndpoint(
+          tab.getEndpoint(),
+        )}</a>) from an HTTP<strong>S</strong> website (<a href="${safeEndpoint(window.location.href)}">${safeEndpoint(
+          window.location.href,
+        )}</a>).<br>This is not allowed in modern browsers, see <a target="_blank" rel="noopener noreferrer" href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy">https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy</a>.`;
+        if (tab.sparqlStudio.config.nonSslDomain) {
+          const errorLink = document.createElement("p");
+          errorLink.innerHTML = `As a workaround, you can use the HTTP version of SparqlStudio instead: <a href="${tab.getShareableLink(
+            tab.sparqlStudio.config.nonSslDomain,
+          )}" target="_blank">${tab.sparqlStudio.config.nonSslDomain}</a>`;
+          errorSpan.appendChild(errorLink);
+        }
+        errorEl.appendChild(errorSpan);
+        return errorEl;
+      }
+    }
+  };
+}

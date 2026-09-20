@@ -1,0 +1,63 @@
+/* Sticky footer: page fills at least the viewport */
+.sparql-studio-home {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.sparql-studio-home .VPContent {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+/* Fill the content chain down to the demo so its theme bar can sit at the bottom */
+.sparql-studio-home .VPPage,
+.sparql-studio-home .VPPage > div,
+.sparql-studio-home .VPPage > div > div,
+.sparql-studio-home .sparql-studio-home-demo {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sparql-studio-home .VPPage {
+  padding: 0;
+}
+/* Hide the fixed "Return to top" local-nav bar that overlaps the demo on small screens */
+.sparql-studio-home .VPLocalNav {
+  display: none;
+}
+
+/* VitePress global CSS resets can inflate the endpoint input */
+.sparql-studio .autocomplete {
+  font-size: 13px;
+  line-height: normal;
+  height: auto;
+}
+
+/* YASR and results: natural block height, no overflow clipping */
+.sparql-demo .sparql-studio .sparql-results,
+.sparql-demo .sparql-studio .sparql-results_results {
+  height: auto;
+  overflow: visible;
+}
+
+/* Graph plugin */
+.sparql-demo .sparql-studio-graph-plugin-container {
+  min-height: 30vh;
+}
+
+/* Geo plugin/leaflet: needs an explicit height to render */
+.sparql-demo .sparql-results_results .leaflet-container {
+  min-height: 300px;
+}
+
+/* VitePress dark mode uses class="dark" on <html>, while SparqlStudio's own dark theme keys off [data-theme="dark"] */
+.dark .sparql-studio .clearEndpointBtn {
+  background-color: var(--yg-d-border);
+  border-color: var(--yg-d-border);
+  color: var(--yg-d-text);
+}
+.dark .sparql-studio .clearEndpointBtn:hover {
+  background-color: var(--yg-d-hover);
+  color: #fff;
+}

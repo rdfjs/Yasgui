@@ -14,14 +14,15 @@
     "outDir": "./build/ts",
     "rootDir": ".",
     "paths": {
-      "@zazuko/yasgui": ["./packages/yasgui/src"],
-      "@zazuko/yasgui-utils": ["./packages/utils/src"],
-      "@zazuko/yasqe": ["./packages/yasqe/src"],
-      "@zazuko/yasr": ["./packages/yasr/src"]
+      "@rdfjs/sparql-studio": ["./packages/sparql-studio/src"],
+      "@rdfjs/sparql-utils": ["./packages/sparql-utils/src"],
+      "@rdfjs/sparql-editor-monaco": ["./packages/sparql-editor-monaco/src"],
+      "@rdfjs/sparql-editor-codemirror": ["./packages/sparql-editor-codemirror/src"],
+      "@rdfjs/sparql-results": ["./packages/sparql-results/src"]
     }
   },
-  "files": ["./packages/yasgui/typings-custom/main.d.ts", "./vite-env.d.ts"],
-  "include": ["./packages/*/src/**/**/*", "./test/*", "./packages/yasqe/grammar/tokenizer.ts"],
+  "files": ["./packages/sparql-studio/typings-custom/main.d.ts", "./vite-env.d.ts"],
+  "include": ["./packages/*/src/**/**/*", "./test/*"],
   "compileOnSave": false,
   "exclude": ["**/build/**"]
 }

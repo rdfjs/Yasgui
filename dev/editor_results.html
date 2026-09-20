@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/sparql-studio.svg" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>SPARQL Editor & Results</title>
+  </head>
+  <body>
+    <div class="navBar">
+      <nav style="display: flex">
+        <img class="logo" src="/sparql-studio.svg" style="max-height:50px;padding:5px;margin-left: 10px" alt="SPARQL Studio Logo" />
+        <ul style="display: flex; list-style: none; align-self: center">
+          <li class="navItem"><a class="nav-link" href="/">SPARQL Studio</a></li>
+          <li class="navItem"><a class="nav-link" href="codemirror">CodeMirror</a></li>
+          <li class="navItem active"><a class="nav-link" href="editor_results">Editor & Results</a></li>
+        </ul>
+        <button class="themeToggle" id="darkModeToggle" type="button"></button>
+      </nav>
+    </div>
+    <div id="sparqlEditor"></div>
+    <div id="sparqlResults"></div>
+    <script type="module">
+      import SparqlEditor, { qlueLs } from "@rdfjs/sparql-editor-monaco";
+      import SparqlResults from "@rdfjs/sparql-results";
+      import QlueLsWorker from "./qluels.worker?worker";
+      import { setupThemeToggle, DEMO_ENDPOINT } from "./utils";
+
+      window.onpageshow = function () {
+        const theme = setupThemeToggle((t) => window.sparqlEditor?.setTheme(t));
+        window.sparqlEditor = new SparqlEditor(document.getElementById("sparqlEditor"), {
+          theme,
+          languageServers: [
+            {
+              label: "Qlue-ls",
+              worker: () => new QlueLsWorker({ name: "qlue-ls" }),
+              onReady: (client) => qlueLs.configureBackend(client, DEMO_ENDPOINT),
+            },
+          ],
+        });
+        window.sparqlResults = new SparqlResults(document.getElementById("sparqlResults"), {
+          prefixes: function () {
+            return window.sparqlEditor.getPrefixesFromQuery();
+          },
+        });
+        window.sparqlEditor.on("queryResponse", function (sparqlEditor, response, duration) {
+          console.log({ response: response });
+          window.sparqlResults.setResponse(response, duration);
+        });
+      };
+    </script>
+  </body>
+</html>

@@ -62,7 +62,9 @@ export async function getPage(browser: Browser, path: string) {
         reject(err);
       });
     }),
-    page.waitForFunction(() => "yasgui" in window || "yasr" in window || "yasqe" in window || "stories" in window),
+    page.waitForFunction(
+      () => "sparqlStudio" in window || "sparqlResults" in window || "sparqlEditor" in window || "stories" in window,
+    ),
   ]);
   page.on("error", (e) => {
     console.error("Error on page: ", e);
