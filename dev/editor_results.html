@@ -34,7 +34,11 @@
             {
               label: "Qlue-ls",
               worker: () => new QlueLsWorker({ name: "qlue-ls" }),
-              onReady: (client) => qlueLs.configureBackend(client, DEMO_ENDPOINT),
+              onReady: async (client) => {
+                await qlueLs.configureBackend(client, DEMO_ENDPOINT);
+                // Prefix map discovery is async: tests wait on this flag before relying on prefixes
+                window.backendReady = true;
+              },
             },
           ],
         });

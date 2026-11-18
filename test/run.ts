@@ -237,13 +237,15 @@ describe("SparqlEditor", function () {
   // Autoadd prefixes: qlue-ls automatically inserts a PREFIX declaration when a known namespace
   // prefix is typed as a SPARQL prefix reference (e.g. "foaf:").
   describe("Autoadd prefixes", function () {
-    // Each test gets a fresh page; wait for LSP per-page.
+    // Each test gets a fresh page; wait for the LSP AND for the backend (which carries the prefix
+    // map used to add missing prefixes) to be registered: qlue-ls only adds a prefix on a change,
+    // so typing before the backend is up silently does nothing.
     beforeEach(async function () {
       this.timeout(15000);
-      await page.waitForFunction(() => !!(window as any).sparqlEditor?.getLanguageClient?.(), {
-        timeout: 12000,
-        polling: 200,
-      });
+      await page.waitForFunction(
+        () => !!(window as any).sparqlEditor?.getLanguageClient?.() && !!(window as any).backendReady,
+        { timeout: 12000, polling: 200 },
+      );
       await wait(500);
     });
     //note: this test also covers the infinite loop issue described here:
