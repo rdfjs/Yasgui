@@ -5,6 +5,8 @@ To embed SPARQL Studio, choose an editor and a language server. This guide uses 
 [CodeMirror 6](./sparql-editor-codemirror) with the same server configuration, or choose another
 [language server](./language-server).
 
+For hosts that block Web Workers, use [CodeMirror without workers](#codemirror-without-workers).
+
 For standalone components, see the editor pages or [Results](./sparql-results).
 
 ## 1. Install

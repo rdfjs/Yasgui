@@ -75,7 +75,7 @@ Install `swls-wasm` and use the [example worker](https://github.com/rdfjs/Yasgui
 
 ## Traqula
 
-The [Traqula worker](https://github.com/rdfjs/Yasgui/blob/main/dev/traqula.worker.ts) runs the SPARQL 1.2 parser on document changes and publishes syntax errors as LSP diagnostics. It provides no completion or semantic tokens, so the editor uses its built-in syntax highlighting.
+The [Traqula worker](https://github.com/rdfjs/Yasgui/blob/main/dev/traqula.worker.ts) runs the SPARQL 1.2 parser on document changes and publishes syntax errors as LSP diagnostics. It provides no completion or semantic tokens, so the editor uses its built-in syntax highlighting (and, with CodeMirror, its built-in keyword completion).
 
 ```bash
 npm i --save @traqula/parser-sparql-1-2 @traqula/chevrotain

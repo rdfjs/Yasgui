@@ -39,7 +39,8 @@ const editor = new SparqlEditor(document.getElementById("editor")!, {
 editor.on("queryResponse", (editor, response, duration) => console.log(response, duration));
 ```
 
-Omit `languageServers` for syntax highlighting without server features. With several servers, a dropdown
+Omit `languageServers` for worker-free highlighting and completion of SPARQL keywords and built-in functions.
+The same local highlighting and completion fill in for a server that lacks them. With several servers, a dropdown
 in the toolbar lets users switch between them. See [Language server](./language-server) for the choices and hooks.
 
 ## Configuration

@@ -20,7 +20,7 @@ export default function get() {
     readOnly: false,
     syntaxErrorCheck: true,
     extensions: [],
-    // Language servers are consumer-provided; none by default (SparqlEditor is then a plain text editor)
+    // None by default: local highlighting and keyword completion cover what no server provides.
     languageServers: [],
     // Follow the OS/browser preference by default so the editor matches the auto-adapting chrome.
     // Callers can override by passing `theme` explicitly or via SparqlEditor.setTheme().
@@ -31,7 +31,6 @@ export default function get() {
     editorHeight: "300px",
     queryingDisabled: undefined,
     collapsePrefixesOnLoad: false,
-    autocompleters: [],
     hintConfig: {},
 
     createShareableLink: function (yasqe: SparqlEditor) {

@@ -100,6 +100,74 @@ describe("SparqlEditor", function () {
     expect(errors).to.deep.equal([]);
   });
 
+  it("completes SPARQL in Studio when workers are blocked", async () => {
+    await page.evaluateOnNewDocument(() => {
+      (window as any).workerAttempts = 0;
+      globalThis.Worker = new Proxy(globalThis.Worker, {
+        construct() {
+          (window as any).workerAttempts++;
+          throw new DOMException("Workers disabled", "SecurityError");
+        },
+      });
+    });
+    await page.goto(new URL("codemirror.html?workers=off", page.url()).href);
+    await page.waitForSelector(".cm-content");
+    await page.evaluate(() => {
+      const editor = (window as any).sparqlStudio.editor;
+      editor.setValue("");
+      editor.focus();
+    });
+    await page.keyboard.type("sel");
+    await page
+      .locator(".cm-tooltip-autocomplete li")
+      .filter((el) => el.textContent === "SELECT")
+      .click();
+    expect(await page.evaluate(() => (window as any).sparqlStudio.editor.getValue())).to.equal("SELECT");
+    expect(await page.evaluate(() => (window as any).workerAttempts)).to.equal(0);
+  });
+
+  it("CodeMirror: Enter keeps complete input instead of accepting a keyword", async () => {
+    await page.goto(new URL("codemirror.html?workers=off", page.url()).href);
+    await page.waitForSelector(".cm-content");
+    // None of these may open a popup that Enter would accept: `a`, numbers, complete keywords, IRIs
+    for (const typed of ["?s a", "LIMIT 25", "UNION", "<http://example.org/graph"]) {
+      await page.evaluate(() => {
+        const editor = (window as any).sparqlStudio.editor;
+        editor.setValue("");
+        editor.focus();
+      });
+      await page.keyboard.type(typed);
+      await wait(300); // long enough for a popup to open and become interactive
+      await page.keyboard.press("Enter");
+      expect(await page.evaluate(() => (window as any).sparqlStudio.editor.getValue())).to.equal(typed + "\n");
+    }
+  });
+
+  it("CodeMirror: local keyword completion follows the server's completion support", async () => {
+    await page.goto(page.url().replace("editor_results.html", "codemirror.html"));
+    await page.waitForFunction(() => !!(window as any).sparqlStudio?.editor);
+    // Is the local completion extension currently enabled in the editor state?
+    const localCompletionOn = (server: string) =>
+      page.evaluate(async (label) => {
+        const editor = (window as any).sparqlStudio.editor;
+        await editor.setLanguageServer(label);
+        return [editor.localCompletionCompartment.get(editor.cm.state)].flat().length > 0;
+      }, server);
+    expect(await localCompletionOn("Qlue-ls")).to.equal(false);
+    expect(await localCompletionOn("Traqula")).to.equal(true);
+    await page.evaluate(() => {
+      const editor = (window as any).sparqlStudio.editor;
+      editor.setValue("");
+      editor.focus();
+    });
+    await page.keyboard.type("sel");
+    await page
+      .locator(".cm-tooltip-autocomplete li")
+      .filter((el) => el.textContent === "SELECT")
+      .click();
+    expect(await page.evaluate(() => (window as any).sparqlStudio.editor.getValue())).to.equal("SELECT");
+  });
+
   for (const editorName of ["Monaco", "CodeMirror"]) {
     it(`${editorName}: releases language server workers when destroyed`, async () => {
       if (editorName === "CodeMirror") {

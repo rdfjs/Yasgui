@@ -3,10 +3,9 @@
  *
  * SparqlEditor is language server agnostic. The embedder supplies each server as a Web `Worker` (the
  * universal LS transport, identical to the Monaco-based `@rdfjs/sparql-editor-monaco`) via
- * `config.languageServers`; SparqlEditor builds the `@codemirror/lsp-client` `LSPClient` internally. All
- * language features (highlighting, diagnostics, completion, hover, formatting) come from the active
- * server; SparqlEditor ships no SPARQL grammar of its own. When two or more servers are configured, a
- * switcher dropdown lets the user pick between them at runtime ({@link SparqlEditor.setLanguageServer}).
+ * `config.languageServers`; SparqlEditor builds the `@codemirror/lsp-client` `LSPClient` internally.
+ * CodeMirror provides local highlighting and keyword completion until a server takes them over, so
+ * both work with no servers configured. With multiple servers, a switcher dropdown lets the user pick between them at runtime ({@link SparqlEditor.setLanguageServer}).
  * @module YasqeCodeMirror
  */
 import "./style/yasqe.css";
@@ -44,7 +43,13 @@ import {
 } from "@codemirror/language";
 import { indentWithTab, defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { search, searchKeymap, highlightSelectionMatches } from "@codemirror/search";
-import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
+import {
+  autocompletion,
+  startCompletion,
+  completionKeymap,
+  closeBrackets,
+  closeBracketsKeymap,
+} from "@codemirror/autocomplete";
 import { lintGutter, lintKeymap } from "@codemirror/lint";
 import { LSPPlugin, type LSPClient } from "@codemirror/lsp-client";
 
@@ -87,7 +92,7 @@ export type { QueryType, RequestConfig, PlainRequestConfig, Prefixes } from "@rd
 export type { LanguageServerSettingsSchema, SettingFieldSchema, LspConnection } from "@rdfjs/sparql-utils";
 import { connectLanguageClient } from "./lsp/connect";
 import { clearSemanticTokens } from "./lsp/glue";
-import { sparqlFallbackHighlight } from "./lsp/sparqlHighlight";
+import { sparqlFallbackHighlight, sparqlLocalCompletion } from "./lsp/sparqlHighlight";
 
 /** A language server made available to the CodeMirror-based SparqlEditor. The editor-agnostic descriptor
  * with its `yasqe` hook argument bound to this editor's {@link SparqlEditor}. Defined once in
@@ -195,7 +200,6 @@ export class SparqlEditor extends EventEmitter implements IEditor {
   public config: Config;
   public storage: YStorage;
   public persistentConfig: PersistentConfig | undefined;
-  public autocompleters: { [name: string]: any } = {}; // reserved for future LSP-based completion
   public queryValid = true;
   public lastQueryDuration: number | undefined;
   private queryType: QueryType | undefined;
@@ -211,6 +215,8 @@ export class SparqlEditor extends EventEmitter implements IEditor {
   private lspCompartment = new Compartment();
   // Static SPARQL highlighting, enabled only while the active server emits no semantic tokens.
   private fallbackHighlightCompartment = new Compartment();
+  // Local keyword completion, enabled only while the active server provides no completion.
+  private localCompletionCompartment = new Compartment();
   private static uriCounter = 0;
   private documentUri?: string;
   /** Index of the active language server in `config.languageServers`, or -1 when none is active. */
@@ -393,6 +399,8 @@ export class SparqlEditor extends EventEmitter implements IEditor {
     base.push(this.lspCompartment.of([]));
     // Static SPARQL highlighting on by default; switched off once a semantic-token server activates.
     base.push(this.fallbackHighlightCompartment.of(sparqlFallbackHighlight));
+    // Local keyword completion on by default; switched off once a server with completion activates.
+    base.push(this.localCompletionCompartment.of(sparqlLocalCompletion));
     if (c.lineWrapping) base.push(EditorView.lineWrapping);
     base.push(
       EditorView.updateListener.of((u: ViewUpdate) => {
@@ -561,11 +569,16 @@ export class SparqlEditor extends EventEmitter implements IEditor {
         effects: this.lspCompartment.reconfigure([lintGutter(), client.plugin(uri, def.languageId ?? "sparql")]),
       });
     }
+    // Local highlighting and keyword completion stand in for whatever this server does not provide.
     const hasSemanticTokens = !!client.serverCapabilities?.semanticTokensProvider;
+    const hasCompletion = !!client.serverCapabilities?.completionProvider;
     this.cm.dispatch({
-      effects: hasSemanticTokens
-        ? this.fallbackHighlightCompartment.reconfigure([])
-        : [this.fallbackHighlightCompartment.reconfigure(sparqlFallbackHighlight), clearSemanticTokens],
+      effects: [
+        ...(hasSemanticTokens
+          ? [this.fallbackHighlightCompartment.reconfigure([])]
+          : [this.fallbackHighlightCompartment.reconfigure(sparqlFallbackHighlight), clearSemanticTokens]),
+        this.localCompletionCompartment.reconfigure(hasCompletion ? [] : sparqlLocalCompletion),
+      ],
     });
     if (def.onReady) def.onReady(toLspConnection(client), this);
     this.applyPersistedLanguageServerSettings(def, client);
@@ -771,12 +784,10 @@ export class SparqlEditor extends EventEmitter implements IEditor {
     // Folding by syntax tree may be added later; no-op for now.
   }
 
-  /* TODO: remove autocompleter stubs */
-  public enableCompleter(_name: string): Promise<void> {
-    return Promise.resolve();
+  /** Open the completion popup at the cursor (language server completion, or local keywords). */
+  public autocomplete(): void {
+    startCompletion(this.cm);
   }
-  public disableCompleter(_name: string): void {}
-  public autocomplete(_fromAutoShow = false): void {}
 
   /* Buttons */
   /** The action buttons row (run, share, format, language server controls). SparqlStudio moves it
@@ -1225,13 +1236,6 @@ export class SparqlEditor extends EventEmitter implements IEditor {
   /* Statics */
   static Sparql = { executeQuery, getAjaxConfig, getUrlArguments, getAcceptHeader, getAsCurlString };
   static defaults = getDefaults();
-  static Autocompleters: { [name: string]: any } = {};
-  static registerAutocompleter(_value: any, _enable = true): void {
-    // No-op: autocomplete is now provided by the language server (see `config.languageServers`).
-  }
-  static forkAutocompleter(_from: string, _to: { name: string } & any, _enable = true): void {
-    // No-op: autocomplete is now provided by the language server (see `config.languageServers`).
-  }
   static clearStorage() {
     const storage = new YStorage(SparqlEditor.storageNamespace);
     storage.removeNamespace();
@@ -1274,14 +1278,9 @@ export interface Config {
   /** Extra CodeMirror 6 extensions (advanced) */
   extensions: Extension[];
   /**
-   * Language Server Protocol integration. SparqlEditor ships no SPARQL grammar of its own, all language
-   * features (highlighting, diagnostics, completion, hover, formatting) come from the server. The
-   * embedder supplies each server as a Web `Worker` (the universal LS transport, identical to the
-   * Monaco-based `@rdfjs/sparql-editor-monaco`, the SAME `languageServers` array works for either editor); SparqlEditor
-   * builds the `LSPClient` internally and wires diagnostics + semantic-token highlighting. The first
-   * is activated on load; when two or more are configured a switcher dropdown appears. qlue-ls (or
-   * any SPARQL server) lives in the embedder, never in SparqlEditor's dependencies. When empty, SparqlEditor is a
-   * plain text editor.
+   * Optional language servers, supplied as Web Workers. The first server is activated on load.
+   * CodeMirror provides local SPARQL highlighting and keyword completion whenever the active server
+   * does not, which includes an empty array (the default).
    */
   languageServers: LanguageServerDef[];
   /**
@@ -1302,8 +1301,6 @@ export interface Config {
   queryingDisabled: string | undefined;
   /** Pre-fold the leading PREFIX / BASE prologue block on load */
   collapsePrefixesOnLoad: boolean;
-  /** Legacy autocompleter names; ignored for now */
-  autocompleters: string[];
   /** Legacy hint config; ignored for now */
   hintConfig: any;
 

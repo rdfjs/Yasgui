@@ -38,6 +38,8 @@
         qlueLs.configureBackend(conn, endpointOf());
       };
       const onEndpointChange = (conn, endpoint) => qlueLs.configureBackend(conn, endpoint);
+      // `?workers=off` mounts the editor without any language server (worker-free mode)
+      const noWorkers = new URLSearchParams(location.search).get("workers") === "off";
 
       window.sparqlStudio = new SparqlStudio(document.getElementById("sparqlStudio"), {
         requestConfig: { endpoint: DEMO_ENDPOINT },
@@ -45,7 +47,7 @@
           new SparqlEditor(parent, {
             ...conf,
             theme,
-            languageServers: [
+            languageServers: noWorkers ? [] : [
               {
                 label: "Qlue-ls",
                 description: "SPARQL language server with endpoint-powered completions",
