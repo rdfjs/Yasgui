@@ -1,0 +1,104 @@
+.sparql-editor .cm-editor {
+  line-height: 1.5em;
+  font-size: 14px;
+  border: 1px solid #d1d1d1;
+  height: 100%;
+}
+.sparql-editor .cm-editor.cm-focused {
+  outline: none;
+}
+.sparql-editor .cm-scroller {
+  font-family: monospace;
+}
+.sparql-editor .cm-matchhighlight {
+  background-color: #dbdeed;
+}
+
+/* Semantic-token colors: the consumer language server glue marks tokens with `cm-st-<tokenType>` classes */
+.sparql-editor .cm-st-keyword {
+  color: #62036f;
+}
+.sparql-editor .cm-st-function {
+  color: #cb4b16;
+}
+.sparql-editor .cm-st-variable {
+  color: #219;
+}
+.sparql-editor .cm-st-string {
+  color: #aa1011;
+}
+.sparql-editor .cm-st-number {
+  color: #2aa198;
+}
+.sparql-editor .cm-st-comment {
+  color: #708090;
+  font-style: italic;
+}
+.sparql-editor .cm-st-operator {
+  color: #000000;
+}
+.sparql-editor .cm-st-namespace {
+  color: #ff5600;
+}
+/* Additional standard LSP semantic-token types (e.g. emitted by swls), mapped onto the same palette
+   so any language server's tokens get colored rather than rendering grey. */
+.sparql-editor .cm-st-property {
+  color: #cb4b16; /* like function */
+}
+.sparql-editor .cm-st-enum {
+  color: #62036f; /* like keyword */
+}
+.sparql-editor .cm-st-enumMember,
+.sparql-editor .cm-st-boolean {
+  color: #2aa198; /* like number / constant */
+}
+.sparql-editor .cm-st-langTag {
+  color: #ff5600; /* like namespace */
+}
+
+/* Dark theme overrides. The CodeMirror editor chrome (background, gutter, selection) is themed via
+   the `darkTheme` extension in index.ts; these rules cover the surrounding container and the
+   semantic-token palette, which live outside CodeMirror's own theming. */
+[data-theme="dark"] .sparql-editor .cm-editor {
+  border-color: #3a3a3a;
+}
+[data-theme="dark"] .sparql-editor .cm-matchhighlight {
+  background-color: #3a3d41;
+}
+[data-theme="dark"] .sparql-editor .cm-st-keyword {
+  color: #7f85e7;
+}
+[data-theme="dark"] .sparql-editor .cm-st-function {
+  color: #32beb3;
+}
+[data-theme="dark"] .sparql-editor .cm-st-variable {
+  color: #adbebe;
+}
+[data-theme="dark"] .sparql-editor .cm-st-string {
+  color: #9db500;
+}
+[data-theme="dark"] .sparql-editor .cm-st-number {
+  color: #f0591a;
+}
+[data-theme="dark"] .sparql-editor .cm-st-comment {
+  color: #68828a;
+}
+[data-theme="dark"] .sparql-editor .cm-st-operator {
+  color: #32beb3;
+}
+[data-theme="dark"] .sparql-editor .cm-st-namespace {
+  color: #d6a200;
+}
+[data-theme="dark"] .sparql-editor .cm-st-property {
+  color: #32beb3;
+}
+[data-theme="dark"] .sparql-editor .cm-st-enum {
+  color: #7f85e7;
+}
+[data-theme="dark"] .sparql-editor .cm-st-enumMember,
+[data-theme="dark"] .sparql-editor .cm-st-boolean {
+  color: #f0591a;
+}
+[data-theme="dark"] .sparql-editor .cm-st-langTag {
+  color: #d6a200;
+}

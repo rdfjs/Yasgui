@@ -1,0 +1,172 @@
+.sparql-studio {
+  .tabPanel {
+    display: none;
+    position: relative;
+    &.active {
+      display: block;
+    }
+  }
+  .sparql-results {
+    margin-top: 5px;
+  }
+
+  .tabContextButton {
+    border: none;
+    background: none;
+    align-self: center;
+    padding-left: 10px;
+    cursor: pointer;
+    color: #505050;
+    fill: #505050;
+
+    .svgImg {
+      width: 15px;
+      height: 15px;
+      font-family: initial; //font families can slightly misalign svgs with the .svgimg div
+    }
+    // IE11 Needs this specified otherwise it will not resize the svg
+    svg {
+      max-width: 15px;
+      max-height: 15px;
+    }
+
+    &:hover {
+      color: black;
+      fill: black;
+    }
+  }
+
+  .controlbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    min-height: 35px;
+
+    // Narrow screens (phones): the endpoint input takes the whole first line and the action bar
+    // wraps onto its own line below it, instead of squeezing both together.
+    @media (max-width: 640px) {
+      // The side margins move to the bar itself, so a full-width child cannot overflow it
+      box-sizing: border-box;
+      // Bottom padding keeps the wrapped button row off the editor
+      padding: 0 10px 6px;
+      row-gap: 6px;
+
+      .autocompleteWrapper {
+        flex: 1 1 auto;
+        max-width: none;
+        margin-left: 0;
+      }
+      .sparql-editor_buttons {
+        flex: 0 0 100%;
+        margin-left: 0;
+      }
+    }
+
+    .sparql-editor_buttons {
+      // Relative (not static): the share popup hangs from this row. The floating offsets the
+      // editors use when the row sits over the editor must be cleared.
+      position: relative;
+      top: auto;
+      right: auto;
+      display: flex;
+      // Groups wrap onto a new line rather than pushing the bar wider than its container
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-left: 6px;
+    }
+
+    // Action bar: every button gets the same outlined look, buttons of one group stick together
+    // and only the group's outer corners are rounded.
+    .sparql-studio_btnGroup {
+      display: inline-flex;
+      align-items: center;
+      // No gap: buttons of a group share their borders
+      gap: 0;
+
+      > button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 26px;
+        min-width: 30px;
+        margin: 0;
+        padding: 0 8px;
+        border: 1px solid var(--sparql-editor-btn-border, #ccc);
+        border-radius: 0;
+        background: var(--sparql-editor-btn-bg, #fff);
+        color: var(--sparql-editor-btn-text, #333);
+        fill: var(--sparql-editor-btn-text, #333);
+        font-size: 12px;
+        line-height: 1;
+        cursor: pointer;
+
+        svg {
+          display: block;
+          width: 15px;
+          height: 15px;
+          max-width: 15px;
+          max-height: 15px;
+          fill: currentColor;
+        }
+
+        &:hover {
+          background: var(--sparql-editor-btn-hover-bg, #ebebeb);
+          border-color: var(--sparql-editor-btn-hover-border, #adadad);
+        }
+        &[hidden] {
+          display: none;
+        }
+      }
+
+      > button + button {
+        border-left: none;
+      }
+      > button:first-child {
+        border-radius: 4px 0 0 4px;
+      }
+      > button:last-child {
+        border-radius: 0 4px 4px 0;
+      }
+      > button:only-child {
+        border-radius: 4px;
+      }
+      // A trailing button can be hidden (e.g. a language server without settings): the button
+      // before it then owns the group's right corners.
+      > button:first-child:has(+ button[hidden]) {
+        border-radius: 4px;
+      }
+
+      // The run triangle is sized through these vars in the editor packages
+      > .sparql-editor_queryButton {
+        --queryButtonWidth: 15px;
+        --queryButtonHeight: 15px;
+        width: auto;
+
+        // The icon wrappers are absolutely positioned when the row floats over the editor, which
+        // pins them to the top of the button here. Make them normal (centered) flex children.
+        .queryIcon,
+        .stopIcon {
+          position: static;
+          height: auto;
+        }
+        // The stop square sits inside the spinner ring, so it needs a bigger box to stay readable
+        .stopIcon svg {
+          width: 19px;
+          height: 19px;
+          max-width: 19px;
+          max-height: 19px;
+        }
+      }
+      // Room for the dropdown caret drawn with ::after
+      > .sparql-editor_lsSelect {
+        padding-right: 20px;
+      }
+    }
+
+    .sparql-editor_sharePopup {
+      max-width: 80vw;
+    }
+  }
+}

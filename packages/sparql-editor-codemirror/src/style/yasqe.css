@@ -1,0 +1,159 @@
+/* CSS Custom Properties for sparql-editor theming (light defaults) */
+:root {
+  --sparql-editor-text: #000000;
+  --sparql-editor-border: #d1d1d1;
+  --sparql-editor-notification-bg: #eeeeee;
+  --sparql-editor-notification-text: #999999;
+  --sparql-editor-tooltip-bg: rgba(0, 0, 0, 0.8);
+  --sparql-editor-tooltip-text: #ffffff;
+  --sparql-editor-error: #ff0000;
+  --sparql-editor-btn-bg: #ffffff;
+  --sparql-editor-btn-text: #333333;
+  --sparql-editor-btn-border: #cccccc;
+  --sparql-editor-btn-hover-bg: #ebebeb;
+  --sparql-editor-btn-hover-border: #adadad;
+  --sparql-editor-accent: #337ab7;
+  --sparql-editor-accent-text: #ffffff;
+  --sparql-editor-popup-bg: #ffffff;
+  --sparql-editor-popup-border: #e3e3e3;
+  --sparql-editor-icon: #505050;
+}
+
+/* Dark values, shared by the explicit toggle and the OS preference below */
+html[data-theme="dark"] {
+  --sparql-editor-text: #d4d4d4;
+  --sparql-editor-border: #3e3e3e;
+  --sparql-editor-notification-bg: #2d2d30;
+  --sparql-editor-notification-text: #cccccc;
+  --sparql-editor-tooltip-bg: rgba(255, 255, 255, 0.1);
+  --sparql-editor-tooltip-text: #ffffff;
+  --sparql-editor-error: #ff6b6b;
+  --sparql-editor-btn-bg: #2d2d30;
+  --sparql-editor-btn-text: #d4d4d4;
+  --sparql-editor-btn-border: #3e3e3e;
+  --sparql-editor-btn-hover-bg: #3e3e3e;
+  --sparql-editor-btn-hover-border: #555555;
+  --sparql-editor-accent: #4fc3f7;
+  --sparql-editor-accent-text: #1e1e1e;
+  --sparql-editor-popup-bg: #2d2d30;
+  --sparql-editor-popup-border: #3e3e3e;
+  --sparql-editor-icon: #cccccc;
+}
+
+/* Auto dark mode following the OS/browser preference, unless the user forced light */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    --sparql-editor-text: #d4d4d4;
+    --sparql-editor-border: #3e3e3e;
+    --sparql-editor-notification-bg: #2d2d30;
+    --sparql-editor-notification-text: #cccccc;
+    --sparql-editor-tooltip-bg: rgba(255, 255, 255, 0.1);
+    --sparql-editor-tooltip-text: #ffffff;
+    --sparql-editor-error: #ff6b6b;
+    --sparql-editor-btn-bg: #2d2d30;
+    --sparql-editor-btn-text: #d4d4d4;
+    --sparql-editor-btn-border: #3e3e3e;
+    --sparql-editor-btn-hover-bg: #3e3e3e;
+    --sparql-editor-btn-hover-border: #555555;
+    --sparql-editor-accent: #4fc3f7;
+    --sparql-editor-accent-text: #1e1e1e;
+    --sparql-editor-popup-bg: #2d2d30;
+    --sparql-editor-popup-border: #3e3e3e;
+    --sparql-editor-icon: #cccccc;
+  }
+}
+
+.sparql-editor {
+  position: relative;
+}
+.sparql-editor .cm-editor {
+  min-height: 60px;
+}
+.sparql-editor .svgImg {
+  display: inline-block;
+}
+.sparql-editor span.shortlinkErr {
+  font-size: small;
+  color: red;
+  font-weight: bold;
+  float: left;
+}
+.sparql-editor .notificationContainer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  bottom: 0;
+}
+.sparql-editor .notification {
+  z-index: 4;
+  padding: 0 5px;
+  max-height: 0px;
+  /* Clip while collapsed so the (possibly multi-line) text disappears with the box on dismiss. */
+  overflow: hidden;
+  color: #999;
+  background-color: #eee;
+  font-size: 90%;
+  text-align: center;
+  transition: max-height 0.2s ease-in;
+  border-top-right-radius: 2px;
+  border-top-left-radius: 2px;
+}
+.sparql-editor .notification.active {
+  max-height: 3rem;
+}
+.sparql-editor .parseErrorIcon {
+  width: 13px;
+  height: 13px;
+  margin-top: 2px;
+  margin-left: 2px;
+}
+.sparql-editor .parseErrorIcon svg g {
+  fill: red;
+}
+.sparql-editor .sparql-editor_tooltip {
+  background: #333;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 5px;
+  color: #fff;
+  padding: 5px 15px;
+  width: 220px;
+  white-space: pre-wrap;
+  white-space: normal;
+  margin-top: 5px;
+}
+.sparql-editor .notificationLoader {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+}
+.sparql-editor .resizeWrapper {
+  width: 100%;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: row-resize;
+}
+.sparql-editor .resizeChip {
+  width: 20%;
+  height: 4px;
+  background-color: #d1d1d1;
+  visibility: hidden;
+  border-radius: 2px;
+}
+/* Show resizeChip when sparql-editor is hovered */
+.sparql-editor:hover .resizeChip {
+  visibility: visible;
+}
+
+[data-theme="dark"] .sparql-editor .notification {
+  color: #aaa;
+  background-color: #2a2a2a;
+}
+[data-theme="dark"] .sparql-editor .resizeChip {
+  background-color: #3a3a3a;
+}
+
+/* Language-server error notifications render via the shared `createLspErrorNotification` helper
+   (@rdfjs/sparql-utils), which injects its own `.sparql-editor-lsp-error` styles. */

@@ -2,50 +2,70 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <style>
-      body {
-        font-family: "Roboto", sans-serif;
-        margin: 0px;
-      }
-      .navItem a {
-        color: #555;
-        text-decoration: none;
-        padding: 5px;
-        padding-right: 15px;
-      }
-      .navItem a:hover {
-        color: #222;
-      }
-      .navItem.active a {
-        color: black;
-        font-size: 110%;
-      }
-    </style>
-    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" />
-    <title>YASGUI</title>
+    <link rel="icon" href="/sparql-studio.svg" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>SPARQL Studio</title>
   </head>
   <body>
-    <div style="background:#eee">
+    <div class="navBar">
       <nav style="display: flex">
-        <img src="/yasgui.png" style="max-height:50px;padding:5px;margin-left: 10px" alt="Yasgui Logo" />
+        <img class="logo" src="/sparql-studio.svg" style="max-height:50px;padding:5px;margin-left: 10px" alt="SPARQL Studio Logo" />
         <ul style="display: flex; list-style: none; align-self: center">
-          <li class="navItem active"><a class="nav-link" href="/">Yasgui</a></li>
-          <li class="navItem"><a class="nav-link" href="yasqe">Yasqe</a></li>
-          <li class="navItem"><a class="nav-link" href="yasr">Yasr</a></li>
+          <li class="navItem active"><a class="nav-link" href="/">SPARQL Studio</a></li>
+          <li class="navItem"><a class="nav-link" href="codemirror">CodeMirror</a></li>
+          <li class="navItem"><a class="nav-link" href="editor_results">Editor & Results</a></li>
         </ul>
+        <button class="themeToggle" id="darkModeToggle" type="button"></button>
       </nav>
     </div>
 
-    <div id="yasgui"></div>
+    <div id="sparqlStudio"></div>
 
     <script type="module">
-      import Yasgui from "@zazuko/yasgui";
+      import SparqlStudio from "@rdfjs/sparql-studio";
+      import SparqlEditor, { qlueLs } from "@rdfjs/sparql-editor-monaco";
+      import QlueLsWorker from "./qluels.worker?worker";
+      import SwlsWorker from "./swls.worker?worker";
+      import TraqulaWorker from "./traqula.worker?worker";
+      import { setupThemeToggle, DEMO_ENDPOINT } from "./utils";
+
       window.onpageshow = function () {
-        window.yasgui = new Yasgui(document.getElementById("yasgui"), {
-          corsProxy: "",
-          requestConfig: {
-            endpoint: "https://dbpedia.org/sparql",
-          },
+        const theme = setupThemeToggle((t) => window.sparqlStudio.editor?.setTheme(t));
+        const endpointOf = () => window.sparqlStudio?.getTab()?.getEndpoint() ?? DEMO_ENDPOINT;
+        const onReady = (client) => {
+          qlueLs.configureSettings(client, qlueLs.defaultSettings);
+          qlueLs.configureBackend(client, endpointOf());
+        };
+        const onEndpointChange = (client, endpoint) => qlueLs.configureBackend(client, endpoint);
+
+        window.sparqlStudio = new SparqlStudio(document.getElementById("sparqlStudio"), {
+          requestConfig: { endpoint: DEMO_ENDPOINT },
+          editor: (parent, conf) =>
+            new SparqlEditor(parent, {
+              ...conf,
+              theme,
+              languageServers: [
+                {
+                  label: "Qlue-ls",
+                  description: "SPARQL language server with endpoint-powered completions",
+                  worker: () => new QlueLsWorker({ name: "qlue-ls" }),
+                  onReady,
+                  onEndpointChange,
+                  configSchema: qlueLs.settingsSchema,
+                  configCallback: (client, settings) => qlueLs.configureSettings(client, settings),
+                },
+                {
+                  label: "swls",
+                  description: "Semantic web language server",
+                  worker: () => new SwlsWorker({ name: "swls" }),
+                },
+                {
+                  label: "Traqula",
+                  description: "JS SPARQL 1.2 parser (diagnostics only)",
+                  worker: () => new TraqulaWorker({ name: "traqula-ls" }),
+                },
+              ],
+            }),
         });
       };
     </script>

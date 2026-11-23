@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">SPARQL Studio</title>
+  <desc id="desc">A softly rounded hexagon with green, orange and magenta facets and an open center.</desc>
+  <defs>
+    <linearGradient id="top" x1="62" y1="37" x2="196" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#91AC43"/>
+      <stop offset="1" stop-color="#708C30"/>
+    </linearGradient>
+    <linearGradient id="left" x1="28" y1="80" x2="128" y2="234" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D99447"/>
+      <stop offset="1" stop-color="#B96E29"/>
+    </linearGradient>
+    <linearGradient id="right" x1="228" y1="80" x2="128" y2="234" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A23880"/>
+      <stop offset="1" stop-color="#78265E"/>
+    </linearGradient>
+    <clipPath id="hexagon">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M136 26.6 220 75.4Q228 80 228 89.2V166.8Q228 176 220 180.6L136 229.4Q128 234 120 229.4L36 180.6Q28 176 28 166.8V89.2Q28 80 36 75.4L120 26.6Q128 22 136 26.6ZM132 88.3Q128 86 124 88.3L87 109.7Q83 112 83 116.6V143.4Q83 148 87 150.3L124 171.7Q128 174 132 171.7L169 150.3Q173 148 173 143.4V116.6Q173 112 169 109.7Z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#hexagon)">
+    <path fill="url(#left)" d="M0 0H256V256H0Z"/>
+    <path fill="url(#right)" d="M128 138 256 64V256H128Z"/>
+    <path fill="url(#top)" d="M0 0H256V64L128 138 0 64Z"/>
+  </g>
+</svg>
