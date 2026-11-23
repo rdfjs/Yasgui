@@ -1,6 +1,6 @@
 # Language servers
 
-SPARQL Studio and both editors are language-server agnostic. Supply an LSP Web Worker to add language features; use any of the integrations below or connect your own server.
+SPARQL Studio and both editors are language-server agnostic. Supply an LSP Web Worker to add language features; use any of the integrations below or connect your own server. The CodeMirror editor also ships a [built-in server](#built-in-codemirror-server) that needs no worker.
 
 ## Available servers
 
@@ -9,6 +9,7 @@ SPARQL Studio and both editors are language-server agnostic. Supply an LSP Web W
 | [`qlue-ls`](https://www.npmjs.com/package/qlue-ls) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [qluels.worker.ts](https://github.com/rdfjs/Yasgui/blob/main/dev/qluels.worker.ts) |
 | [`swls-wasm`](https://www.npmjs.com/package/swls-wasm) | ✅ | ✅ | ✅ | ✅ | - | - | [swls.worker.ts](https://github.com/rdfjs/Yasgui/blob/main/dev/swls.worker.ts) |
 | [`@traqula/parser-sparql-1-2`](https://www.npmjs.com/package/@traqula/parser-sparql-1-2) | - | - | ✅ | - | - | - | [traqula.worker.ts](https://github.com/rdfjs/Yasgui/blob/main/dev/traqula.worker.ts) |
+| [Built-in](#built-in-codemirror-server) (CodeMirror only) | ✅ | - | - | - | - | - | none, runs without a worker |
 
 The table covers SPARQL features, not support for other RDF languages. A dash means unavailable in the SPARQL integration. Traqula is a parser wrapped in a small LSP adapter in this repository.
 Both editors provide syntax highlighting when no semantic tokens are available.
@@ -82,6 +83,51 @@ npm i --save @traqula/parser-sparql-1-2 @traqula/chevrotain
 ```
 
 Copy the worker into your app and add it to `languageServers`. It runs in JavaScript and needs no WASM plugin or server-specific hooks.
+
+## Built-in CodeMirror server
+
+`localLanguageServer()` from `@rdfjs/sparql-editor-codemirror` is made of CodeMirror extensions and runs on the main thread, for hosts where Web Workers are unavailable. List it in `languageServers` like any other server, alone or next to worker-based ones:
+
+```ts
+import SparqlEditor, { localLanguageServer } from "@rdfjs/sparql-editor-codemirror";
+
+new SparqlEditor(document.getElementById("editor")!, {
+  requestConfig: { endpoint: "https://sparql.dblp.org/sparql" },
+  languageServers: [localLanguageServer()],
+});
+```
+
+It completes:
+
+- SPARQL keywords and built-in functions
+- variables already used in the query
+- predicates of the endpoint, in predicate position
+- classes of the endpoint, after `a` or `rdf:type`
+
+Predicates and classes are listed once per endpoint with two SPARQL queries, sent as `GET` with the headers and credentials of the editor's [request settings](./request-config), then filtered in the browser as you type. Suggestions are shortened with the prefixes declared in the query, then with the prefix map; picking one adds its `PREFIX` declaration when missing. Type `<` to match full IRIs instead.
+
+It provides no diagnostics, hover or formatting, and relies on the editor's built-in syntax highlighting.
+
+| Option | Description |
+| --- | --- |
+| `label`, `description` | Name and description shown in the server dropdown. The label defaults to `Built-in` |
+| `predicatesQuery` | `SELECT` query listing the predicates, bound to `?term`. Defaults to `SELECT DISTINCT ?term WHERE { ?s ?term ?o } LIMIT 1000` |
+| `classesQuery` | `SELECT` query listing the classes, bound to `?term`. Defaults to `SELECT DISTINCT ?term WHERE { ?s a ?term } LIMIT 1000` |
+| `prefixes` | `{ prefix: namespace }` map used to shorten IRIs. Defaults to the endpoint's `sh:prefix` / `sh:namespace` declarations, or common prefixes when it has none |
+| `timeout` | Timeout of each endpoint query in milliseconds. Defaults to `30000` |
+
+On a large endpoint the default queries can be slow or time out. Point `predicatesQuery` and `classesQuery` at a cheaper source, such as the endpoint's VoID description:
+
+```ts
+localLanguageServer({
+  predicatesQuery: `PREFIX void: <http://rdfs.org/ns/void#>
+SELECT DISTINCT ?term WHERE { [] void:propertyPartition/void:property ?term }`,
+  classesQuery: `PREFIX void: <http://rdfs.org/ns/void#>
+SELECT DISTINCT ?term WHERE { [] void:classPartition/void:class ?term }`,
+});
+```
+
+Any object with a `label` and an `extension` (CodeMirror extensions, or a function of the editor returning them) is accepted as a worker-free server, so you can build your own the same way.
 
 ## Configuration
 

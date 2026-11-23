@@ -5,7 +5,8 @@
  * universal LS transport, identical to the Monaco-based `@rdfjs/sparql-editor-monaco`) via
  * `config.languageServers`; SparqlEditor builds the `@codemirror/lsp-client` `LSPClient` internally.
  * CodeMirror provides local highlighting and keyword completion until a server takes them over, so
- * both work with no servers configured. With multiple servers, a switcher dropdown lets the user pick between them at runtime ({@link SparqlEditor.setLanguageServer}).
+ * both work with no servers configured. A server can also be made of CodeMirror extensions instead
+ * of a worker (see {@link localLanguageServer}). With multiple servers, a switcher dropdown lets the user pick between them at runtime ({@link SparqlEditor.setLanguageServer}).
  * @module YasqeCodeMirror
  */
 import "./style/yasqe.css";
@@ -93,11 +94,20 @@ export type { LanguageServerSettingsSchema, SettingFieldSchema, LspConnection } 
 import { connectLanguageClient } from "./lsp/connect";
 import { clearSemanticTokens } from "./lsp/glue";
 import { sparqlFallbackHighlight, sparqlLocalCompletion } from "./lsp/sparqlHighlight";
+import type { LocalLanguageServerDef } from "./lsp/localServer";
+export { localLanguageServer } from "./lsp/localServer";
+export type { LocalLanguageServerDef, LocalLanguageServerOptions } from "./lsp/localServer";
 
-/** A language server made available to the CodeMirror-based SparqlEditor. The editor-agnostic descriptor
- * with its `yasqe` hook argument bound to this editor's {@link SparqlEditor}. Defined once in
- * `@rdfjs/sparql-utils` so the SAME object also works with `@rdfjs/sparql-editor-monaco` (Monaco). */
-export type LanguageServerDef = SharedLanguageServerDef<SparqlEditor>;
+/** A worker-based language server: the editor-agnostic descriptor with its `yasqe` hook argument bound
+ * to this editor's {@link SparqlEditor}. Defined once in `@rdfjs/sparql-utils` so the SAME object also
+ * works with `@rdfjs/sparql-editor-monaco` (Monaco). */
+export type WorkerLanguageServerDef = SharedLanguageServerDef<SparqlEditor>;
+
+/** A language server made available to the CodeMirror-based SparqlEditor: worker-based, or made of
+ * CodeMirror extensions and so worker-free (CodeMirror only, see {@link localLanguageServer}). */
+export type LanguageServerDef = WorkerLanguageServerDef | LocalLanguageServerDef;
+
+const isLocalServer = (def: LanguageServerDef): def is LocalLanguageServerDef => "extension" in def;
 
 /** Adapt a CodeMirror `LSPClient` to the editor-agnostic {@link LspConnection} handed to
  * language server hooks. Cached per client so identity-based de-dup (e.g. qlue-ls's backend cache,
@@ -264,7 +274,8 @@ export class SparqlEditor extends EventEmitter implements IEditor {
     if (extensions) this.config.extensions = extensions as Extension[];
     if (languageServers) this.config.languageServers = languageServers as Config["languageServers"];
     for (const server of this.config.languageServers ?? []) {
-      if (typeof server.worker !== "function") void waitWorkerReady(server.worker, this.lsAbort.signal).catch(() => {});
+      if (isLocalServer(server) || typeof server.worker === "function") continue;
+      void waitWorkerReady(server.worker, this.lsAbort.signal).catch(() => {});
     }
     this.storage = new YStorage(SparqlEditor.storageNamespace);
 
@@ -463,7 +474,7 @@ export class SparqlEditor extends EventEmitter implements IEditor {
    * server's `documentUri` (string or factory), falling back to an auto-generated unique URI so
    * that several editors sharing one client (e.g. SparqlStudio tabs) get distinct URIs.
    */
-  public getDocumentUri(def?: LanguageServerDef): string {
+  public getDocumentUri(def?: WorkerLanguageServerDef): string {
     if (this.documentUri) return this.documentUri;
     const conf = def?.documentUri;
     if (typeof conf === "function") this.documentUri = conf(this);
@@ -487,14 +498,14 @@ export class SparqlEditor extends EventEmitter implements IEditor {
   }
   /**
    * Notify the active language server that the endpoint changed, firing only its `onEndpointChange`
-   * (with the active `LSPClient`). SparqlStudio calls this on endpoint changes; standalone consumers can
-   * call it themselves. No-op when no server is active or it defines no handler.
+   * (with the active `LSPClient` for a worker-based server). SparqlStudio calls this on endpoint changes;
+   * standalone consumers can call it themselves. No-op when no server is active or it defines no handler.
    */
   public notifyEndpointChange(endpoint: string): void {
     const def = this.config.languageServers?.[this.activeLanguageServerIndex];
-    if (def?.onEndpointChange && this.activeClient && endpoint) {
-      def.onEndpointChange(toLspConnection(this.activeClient), endpoint, this);
-    }
+    if (!def?.onEndpointChange || !endpoint) return;
+    if (isLocalServer(def)) def.onEndpointChange(endpoint, this);
+    else if (this.activeClient) def.onEndpointChange(toLspConnection(this.activeClient), endpoint, this);
   }
   /**
    * Activate a language server by label or index. Resolves (and caches) the target client, runs its
@@ -522,11 +533,28 @@ export class SparqlEditor extends EventEmitter implements IEditor {
     const servers = this.config.languageServers ?? [];
     if (this.destroyed || !servers.length) return;
     if (index !== this.requestedLanguageServerIndex) return;
-    if (index === this.activeLanguageServerIndex && this.activeClient) return;
     const def = servers[index];
+    if (index === this.activeLanguageServerIndex && (this.activeClient || isLocalServer(def))) return;
     // A settings panel belongs to the outgoing server; close it before switching.
     this.lsSettingsPanelDispose?.();
     this.lsSettingsPanelDispose = undefined;
+    // A worker-free server is just CodeMirror extensions: install them in place of the LSP plugin.
+    // It relies on the local grammar, and brings its own completion in place of the keyword fallback.
+    if (isLocalServer(def)) {
+      this.activeClient = undefined;
+      this.activeLanguageServerIndex = index;
+      this.cm.dispatch({
+        effects: [
+          this.lspCompartment.reconfigure(typeof def.extension === "function" ? def.extension(this) : def.extension),
+          this.fallbackHighlightCompartment.reconfigure(sparqlFallbackHighlight),
+          clearSemanticTokens,
+          this.localCompletionCompartment.reconfigure([]),
+        ],
+      });
+      this.lsControls?.update();
+      this.emit("languageServerChange", { label: def.label, description: def.description }, index);
+      return;
+    }
     // Resolve (and cache) the target client. The consumer provides a Worker, we build the `LSPClient`
     //  from it internally. Cached clients make switching back instant
     let client = this.lsClients.get(index);
@@ -596,7 +624,7 @@ export class SparqlEditor extends EventEmitter implements IEditor {
     this.lsSettingsPanelDispose = undefined;
     const def = this.config.languageServers?.[this.activeLanguageServerIndex];
     const client = this.activeClient;
-    if (!def?.configSchema || !def.configCallback || !client) return;
+    if (!def || isLocalServer(def) || !def.configSchema || !def.configCallback || !client) return;
     const schema = def.configSchema as LanguageServerSettingsSchema;
     const current = this.getLanguageServerSettings(def.label) ?? defaultsFromSchema(schema);
     this.lsSettingsPanelDispose = openSettingsPanel({
@@ -634,7 +662,7 @@ export class SparqlEditor extends EventEmitter implements IEditor {
   }
 
   /** Re-apply any persisted settings to a freshly connected client, so they survive reloads/switches. */
-  private applyPersistedLanguageServerSettings(def: LanguageServerDef, client: LSPClient): void {
+  private applyPersistedLanguageServerSettings(def: WorkerLanguageServerDef, client: LSPClient): void {
     if (!def.configCallback) return;
     const stored = this.getLanguageServerSettings(def.label);
     if (stored && Object.keys(stored).length) def.configCallback(toLspConnection(client), unflatten(stored));
@@ -969,7 +997,7 @@ export class SparqlEditor extends EventEmitter implements IEditor {
       getActiveIndex: () => this.activeLanguageServerIndex,
       isConfigurable: (i) => {
         const def = (this.config.languageServers ?? [])[i];
-        return !!(def?.configSchema && def.configCallback);
+        return !!def && !isLocalServer(def) && !!(def.configSchema && def.configCallback);
       },
       onSelect: (i) => void this.setLanguageServer(i),
       onConfigure: () => this.openLanguageServerSettings(),
@@ -1225,7 +1253,7 @@ export class SparqlEditor extends EventEmitter implements IEditor {
     for (const client of this.lsClients.values()) client.disconnect();
     for (const worker of this.lsWorkers.values()) worker.terminate();
     for (const server of this.config.languageServers ?? []) {
-      if (typeof server.worker !== "function") server.worker.terminate();
+      if (!isLocalServer(server) && typeof server.worker !== "function") server.worker.terminate();
     }
     this.lsClients.clear();
     this.lsWorkers.clear();
@@ -1278,9 +1306,10 @@ export interface Config {
   /** Extra CodeMirror 6 extensions (advanced) */
   extensions: Extension[];
   /**
-   * Optional language servers, supplied as Web Workers. The first server is activated on load.
-   * CodeMirror provides local SPARQL highlighting and keyword completion whenever the active server
-   * does not, which includes an empty array (the default).
+   * Optional language servers: Web Workers, or worker-free ones made of CodeMirror extensions (see
+   * {@link localLanguageServer}). The first server is activated on load. CodeMirror provides local
+   * SPARQL highlighting and keyword completion whenever the active server does not, which includes
+   * an empty array (the default).
    */
   languageServers: LanguageServerDef[];
   /**

@@ -23,7 +23,7 @@
 
     <script type="module">
       import SparqlStudio from "@rdfjs/sparql-studio";
-      import SparqlEditor from "@rdfjs/sparql-editor-codemirror";
+      import SparqlEditor, { localLanguageServer } from "@rdfjs/sparql-editor-codemirror";
       import { qlueLs } from "@rdfjs/sparql-utils";
       import QlueLsWorker from "./qluels.worker?worker";
       import SwlsWorker from "./swls.worker?worker";
@@ -38,8 +38,6 @@
         qlueLs.configureBackend(conn, endpointOf());
       };
       const onEndpointChange = (conn, endpoint) => qlueLs.configureBackend(conn, endpoint);
-      // `?workers=off` mounts the editor without any language server (worker-free mode)
-      const noWorkers = new URLSearchParams(location.search).get("workers") === "off";
 
       window.sparqlStudio = new SparqlStudio(document.getElementById("sparqlStudio"), {
         requestConfig: { endpoint: DEMO_ENDPOINT },
@@ -47,7 +45,7 @@
           new SparqlEditor(parent, {
             ...conf,
             theme,
-            languageServers: noWorkers ? [] : [
+            languageServers: [
               {
                 label: "Qlue-ls",
                 description: "SPARQL language server with endpoint-powered completions",
@@ -67,6 +65,7 @@
                 description: "JS SPARQL 1.2 parser (diagnostics only)",
                 worker: () => new TraqulaWorker({ name: "traqula-ls" }),
               },
+              localLanguageServer(),
             ],
           }),
       });

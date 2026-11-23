@@ -129,6 +129,26 @@ Install `@rdfjs/sparql-editor-codemirror` in place of the Monaco package and cha
 To offer several servers, add entries to `languageServers`. Studio remembers the user's choice per endpoint.
 See [Language server](./language-server) for the available servers and their configuration.
 
+## CodeMirror without workers
+
+On hosts that block Web Workers, use the CodeMirror editor with its built-in worker-free server:
+
+```ts
+import SparqlStudio from "@rdfjs/sparql-studio";
+import SparqlEditor, { localLanguageServer } from "@rdfjs/sparql-editor-codemirror";
+import "@rdfjs/sparql-studio/style.css";
+import "@rdfjs/sparql-editor-codemirror/style.css";
+
+const studio = new SparqlStudio(document.getElementById("sparqlStudio")!, {
+  requestConfig: { endpoint: "https://sparql.dblp.org/sparql" },
+  editor: (parent, conf) => new SparqlEditor(parent, { ...conf, languageServers: [localLanguageServer()] }),
+});
+```
+
+It completes keywords, variables, and the predicates and classes of the endpoint, which it lists with two
+SPARQL queries per endpoint. See [Built-in CodeMirror server](./language-server#built-in-codemirror-server)
+for its options, and try it in the [CodeMirror demo](/codemirror) by picking "Built-in" in the server switcher.
+
 ## Without a bundler (CodeMirror)
 
 Load the CodeMirror editor and Studio bundles with their styles:
@@ -143,12 +163,16 @@ Load the CodeMirror editor and Studio bundles with their styles:
 <script>
   const studio = new SparqlStudio.SparqlStudio(document.getElementById("sparqlStudio"), {
     requestConfig: { endpoint: "https://sparql.dblp.org/sparql" },
-    editor: (parent, conf) => new SparqlEditorCodeMirror.SparqlEditor(parent, conf),
+    editor: (parent, conf) =>
+      new SparqlEditorCodeMirror.SparqlEditor(parent, {
+        ...conf,
+        languageServers: [SparqlEditorCodeMirror.localLanguageServer()],
+      }),
   });
 </script>
 ```
 
-Pin matching package versions in production. This example supports query editing and execution without a language server. To add one, pass `languageServers` through the editor factory with a worker URL you host; see [Language server](./language-server). Use ESM when adding external CodeMirror extensions, so they share the editor's CodeMirror dependencies.
+Pin matching package versions in production. This example uses the [built-in CodeMirror server](./language-server#built-in-codemirror-server), which needs no worker. To add another server, pass it in `languageServers` with a worker URL you host; see [Language server](./language-server). Use ESM when adding external CodeMirror extensions, so they share the editor's CodeMirror dependencies.
 
 ## Framework integration
 

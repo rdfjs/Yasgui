@@ -40,7 +40,9 @@ editor.on("queryResponse", (editor, response, duration) => console.log(response,
 ```
 
 Omit `languageServers` for worker-free highlighting and completion of SPARQL keywords and built-in functions.
-The same local highlighting and completion fill in for a server that lacks them. With several servers, a dropdown
+The same local highlighting and completion fill in for a server that lacks them. For worker-free completion of
+the endpoint's predicates and classes, use the [built-in server](./language-server#built-in-codemirror-server):
+`languageServers: [localLanguageServer()]`. With several servers, a dropdown
 in the toolbar lets users switch between them. See [Language server](./language-server) for the choices and hooks.
 
 ## Configuration
@@ -49,7 +51,7 @@ in the toolbar lets users switch between them. See [Language server](./language-
 | --- | --- |
 | `value` | Initial query string |
 | `requestConfig` | Endpoint and [request settings](./request-config) |
-| `languageServers` | Workers and lifecycle hooks for the available servers |
+| `languageServers` | Available servers: workers with their lifecycle hooks, or the worker-free built-in server |
 | `theme` | `"light"` or `"dark"`; defaults to the OS preference |
 | `lineNumbers`, `lineWrapping` | Show line numbers and wrap long lines |
 | `highlightActiveLine`, `matchBrackets` | Highlight the current line and matching brackets |

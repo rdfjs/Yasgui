@@ -30,6 +30,18 @@ describe("SparqlEditor", function () {
     await page.keyboard.type(text);
     await page.waitForFunction(`window.sparqlEditor.getValue().indexOf("${text}") >= 0`, { timeout: 600 });
   }
+  // Load the UMD bundles of Studio with the CodeMirror editor as plain scripts
+  async function loadUmdPackages() {
+    for (const name of ["sparql-utils", "sparql-editor-codemirror", "sparql-results", "sparql-studio"]) {
+      await page.addScriptTag({ path: path.resolve(`packages/${name}/build/${name}.umd.js`) });
+    }
+  }
+  // Open the CodeMirror demo and switch it to the worker-free built-in server
+  async function openBuiltInServer() {
+    await page.goto(page.url().replace("editor_results.html", "codemirror.html"));
+    await page.waitForFunction(() => !!(window as any).sparqlStudio?.editor);
+    await page.evaluate(() => (window as any).sparqlStudio.editor.setLanguageServer("Built-in"));
+  }
   before(async function () {
     const refs = await setup(this, path.resolve("./build"));
     browser = refs.browser;
@@ -64,9 +76,7 @@ describe("SparqlEditor", function () {
     await page.setContent('<div id="studio"></div><div id="results"></div>');
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(String(error)));
-    for (const name of ["sparql-utils", "sparql-editor-codemirror", "sparql-results", "sparql-studio"]) {
-      await page.addScriptTag({ path: path.resolve(`packages/${name}/build/${name}.umd.js`) });
-    }
+    await loadUmdPackages();
     const result = await page.evaluate(async () => {
       const globals = window as any;
       const studio = new globals.SparqlStudio.SparqlStudio(document.getElementById("studio"), {
@@ -110,12 +120,27 @@ describe("SparqlEditor", function () {
         },
       });
     });
-    await page.goto(new URL("codemirror.html?workers=off", page.url()).href);
-    await page.waitForSelector(".cm-content");
+    // Mount Studio as a host without workers would: only the worker-free server
+    await page.goto(new URL("/umd.html", page.url()).href);
+    await page.setContent('<div id="studio"></div>');
+    await loadUmdPackages();
+    // The stylesheets keep the editor and its completion popup inside the viewport
+    for (const name of ["sparql-studio", "sparql-editor-codemirror"]) {
+      await page.addStyleTag({ path: path.resolve(`packages/${name}/build/${name}.css`) });
+    }
     await page.evaluate(() => {
-      const editor = (window as any).sparqlStudio.editor;
-      editor.setValue("");
-      editor.focus();
+      const globals = window as any;
+      globals.sparqlStudio = new globals.SparqlStudio.SparqlStudio(document.getElementById("studio"), {
+        persistenceId: null,
+        requestConfig: { endpoint: "/sparql" },
+        editor: (parent: HTMLElement, conf: CodeMirrorConfig) =>
+          new globals.SparqlEditorCodeMirror.SparqlEditor(parent, {
+            ...conf,
+            languageServers: [globals.SparqlEditorCodeMirror.localLanguageServer()],
+          }),
+      });
+      globals.sparqlStudio.editor.setValue("");
+      globals.sparqlStudio.editor.focus();
     });
     await page.keyboard.type("sel");
     await page
@@ -127,10 +152,10 @@ describe("SparqlEditor", function () {
   });
 
   it("CodeMirror: Enter keeps complete input instead of accepting a keyword", async () => {
-    await page.goto(new URL("codemirror.html?workers=off", page.url()).href);
-    await page.waitForSelector(".cm-content");
-    // None of these may open a popup that Enter would accept: `a`, numbers, complete keywords, IRIs
-    for (const typed of ["?s a", "LIMIT 25", "UNION", "<http://example.org/graph"]) {
+    await openBuiltInServer();
+    // None of these may open a popup that Enter would accept: `a`, numbers, complete keywords, IRIs,
+    // prefixed names
+    for (const typed of ["?s a", "LIMIT 25", "UNION", "<http://example.org/sel", "ex:sel"]) {
       await page.evaluate(() => {
         const editor = (window as any).sparqlStudio.editor;
         editor.setValue("");
@@ -141,6 +166,71 @@ describe("SparqlEditor", function () {
       await page.keyboard.press("Enter");
       expect(await page.evaluate(() => (window as any).sparqlStudio.editor.getValue())).to.equal(typed + "\n");
     }
+  });
+
+  it("CodeMirror: worker-free server completes the endpoint's predicates and classes", async () => {
+    // Stand in for the SPARQL endpoint: answer the term listing queries, no prefix declarations
+    const predicates = ["http://www.w3.org/2000/01/rdf-schema#label", "http://unknown.example/vocab/label"];
+    const classes = ["http://xmlns.com/foaf/0.1/Person"];
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      const query = new URL(request.url()).searchParams.get("query");
+      if (!query) return void request.continue();
+      const terms = query.includes("?s ?term ?o") ? predicates : query.includes("?s a ?term") ? classes : [];
+      void request.respond({
+        contentType: "application/sparql-results+json",
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ results: { bindings: terms.map((value) => ({ term: { type: "uri", value } })) } }),
+      });
+    });
+    await openBuiltInServer();
+    const editorState = () =>
+      page.evaluate(() => {
+        const editor = (window as any).sparqlStudio.editor;
+        return {
+          value: editor.getValue() as string,
+          server: editor.getLanguageServers()[editor.getActiveLanguageServer()]?.label,
+          keywordFallback: [editor.localCompletionCompartment.get(editor.cm.state)].flat().length > 0,
+          client: !!editor.getLanguageClient(),
+        };
+      });
+    // Click the completion with exactly this label, once the popup shows it
+    const pick = async (label: string) => {
+      const option = await page.waitForFunction(
+        (text) =>
+          Array.from(document.querySelectorAll(".cm-tooltip-autocomplete li")).find((li) => li.textContent === text),
+        {},
+        label,
+      );
+      await (option.asElement() as puppeteer.ElementHandle<Element>).click();
+    };
+    await page.evaluate(() => {
+      const editor = (window as any).sparqlStudio.editor;
+      editor.setValue("");
+      editor.focus();
+    });
+
+    // Predicate position: a known namespace is shortened and its PREFIX declared
+    await page.keyboard.type("SELECT * WHERE { ?s lab");
+    await pick("rdfs:label");
+    let state = await editorState();
+    expect(state).to.deep.include({ server: "Built-in", keywordFallback: false, client: false });
+    expect(state.value).to.equal(
+      "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nSELECT * WHERE { ?s rdfs:label}",
+    );
+    // An IRI no prefix fits is inserted in full
+    await page.keyboard.type(" ?label ; voc");
+    await pick("<http://unknown.example/vocab/label>");
+    // Variables come from the query, classes follow `a`
+    await page.keyboard.type(" ?la");
+    await pick("?label");
+    await page.keyboard.type(" ; a Per");
+    await pick("foaf:Person");
+    state = await editorState();
+    expect(state.value).to.equal(
+      "PREFIX foaf: <http://xmlns.com/foaf/0.1/>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+        "SELECT * WHERE { ?s rdfs:label ?label ; <http://unknown.example/vocab/label> ?label ; a foaf:Person}",
+    );
   });
 
   it("CodeMirror: local keyword completion follows the server's completion support", async () => {

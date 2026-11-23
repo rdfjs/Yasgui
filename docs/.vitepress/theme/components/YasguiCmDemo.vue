@@ -29,7 +29,7 @@ onMounted(async () => {
   // SparqlStudio is editor-independent: it builds whatever editor the `sparqlEditor` factory returns. Here we use
   // the CodeMirror 6 editor (@rdfjs/sparql-editor-codemirror) instead of the Monaco one (@rdfjs/sparql-editor-monaco).
   const { default: SparqlStudio } = await import("@rdfjs/sparql-studio");
-  const { default: SparqlEditor } = await import("@rdfjs/sparql-editor-codemirror");
+  const { default: SparqlEditor, localLanguageServer } = await import("@rdfjs/sparql-editor-codemirror");
   await import("@rdfjs/sparql-studio/style.css");
   await import("@rdfjs/sparql-editor-codemirror/style.css");
   const { qlueLs } = await import("@rdfjs/sparql-utils");
@@ -61,8 +61,6 @@ onMounted(async () => {
     qlueLs.configureBackend(conn, endpointOf());
   };
   const onEndpointChange = (conn: any, endpoint: string) => qlueLs.configureBackend(conn, endpoint);
-  // `?workers=off` mounts the editor without any language server (worker-free mode)
-  const noWorkers = new URLSearchParams(location.search).get("workers") === "off";
 
   sparqlStudio = new SparqlStudio(container.value!, {
     requestConfig: { endpoint: DEMO_ENDPOINT },
@@ -70,7 +68,7 @@ onMounted(async () => {
       new SparqlEditor(parent, {
         ...conf,
         theme: isDark.value ? "dark" : "light",
-        languageServers: noWorkers ? [] : [
+        languageServers: [
           {
             label: "Qlue-ls",
             description: "SPARQL language server with endpoint-powered completions",
@@ -90,6 +88,7 @@ onMounted(async () => {
             description: "JS SPARQL 1.2 parser (diagnostics only)",
             worker: () => new TraqulaWorker({ name: "traqula-ls" }),
           },
+          localLanguageServer(),
         ],
       }),
   });

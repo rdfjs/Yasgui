@@ -1,7 +1,7 @@
 import { strict as assert } from "assert";
 import { describe, it } from "mocha";
-import { configureBackend } from "../languageServers/qlueLs";
-import { waitWorkerReady, waitLanguageServerReady } from "../languageServers/worker";
+import { configureBackend } from "../packages/sparql-utils/src/languageServers/qlueLs";
+import { waitWorkerReady, waitLanguageServerReady } from "../packages/sparql-utils/src/languageServers/worker";
 
 describe("Language server regressions", () => {
   it("keeps the latest endpoint when prefix lookups finish out of order", async () => {

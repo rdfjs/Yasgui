@@ -20,7 +20,7 @@
     "test:dev": "TEST_ON_DEV_BUILD=1 npm run test",
     "test": "npm run puppeteer-test && npm run unit-test",
     "test-live": "TEST_ON_DEV_BUILD=1 npm run test",
-    "unit-test": "tsc -p ./tsconfig-test.json && mocha $(find ./build/test -name '*-test.js') --require source-map-support/register",
+    "unit-test": "tsc -p ./tsconfig-test.json && mocha './build/test/test/*.test.js' --require source-map-support/register",
     "puppeteer-test": "tsc -p ./tsconfig-test.json && mocha --timeout 30000 ./build/test/test/run.js --require source-map-support/register",
     "prerelease": "npm run build && npm run test",
     "release": "changeset publish",
